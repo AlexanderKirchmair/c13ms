@@ -1,0 +1,154 @@
+---
+title: "pkgdev"
+author: "Alexander Kirchmair"
+---
+
+```{r setup, include=FALSE}
+
+library(devtools)
+library(usethis)
+library(testthat)
+
+```
+
+
+```{r initial setup}
+
+use_mit_license()
+use_readme_rmd()
+use_pipe()
+
+```
+
+
+
+
+
+
+https://r-pkgs.org/man.html#man-classes
+
+```{r}
+
+library("SummarizedExperiment")
+library("BiocGenerics")
+
+```
+
+```{r}
+
+use_package("ggplot2")
+use_package("dplyr")
+use_package("BiocGenerics")
+use_package("SummarizedExperiment")
+use_package("methods")
+use_package("IsoCorrectoR")
+use_package("crayon")
+use_package("rlang")
+
+use_package("multcomp", type = "Suggests")
+use_package("glmmTMB", type = "Suggests")
+use_package("limma", type = "Suggests")
+use_package("nlme", type = "Suggests")
+use_package("missForest", type = "Suggests")
+use_package("betareg", type = "Suggests")
+use_package("contrasts", type = "Suggests")
+
+
+```
+
+
+
+
+
+
+R functions
+```{r}
+
+use_r("AllClasses")
+use_r("AllGenerics")
+use_r("AllMethods")
+
+use_r("r-data-functions")
+use_r("r-preprocessing-functions")
+use_r("r-normalization-functions")
+use_r("r-imputation-functions")
+use_r("r-difftest-functions")
+use_r("r-plotting-functions")
+use_r("r-isocorrection-functions")
+
+
+```
+
+
+
+
+```{r}
+
+isocomp <- getElementCompositions()
+use_data(isocomp, internal = TRUE)
+
+```
+
+
+```{r}
+load_all()
+```
+
+
+Update documentation
+Code > Insert Roxygen Skeleton
+```{r}
+
+document()
+
+```
+
+
+Unit tests
+```{r}
+
+# lapply(list.files("R/", pattern = ".R"), use_test)
+
+```
+
+
+Test/check
+```{r check}
+
+check()
+
+```
+
+
+
+
+```{r}
+
+usethis::use_build_ignore("pkgdev.Rmd")
+usethis::use_build_ignore("desktop.ini")
+
+```
+
+
+
+
+```{r}
+
+devtools::build_readme()
+
+```
+
+
+Install the package
+```{r}
+
+install()
+
+```
+
+
+
+
+
+
+
