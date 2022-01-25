@@ -4,6 +4,17 @@
 
 
 
+#' variancePartition
+#'
+#' @param data
+#' @param design
+#' @param formula
+#' @param rm.na
+#'
+#' @return
+#' @export
+#'
+#' @examples
 variancePartition <- function(data, design, formula = NULL, rm.na = FALSE){
 
   stopifnot(requireNamespace("variancePartition", quietly = TRUE))
@@ -54,6 +65,17 @@ variancePartition <- function(data, design, formula = NULL, rm.na = FALSE){
 
 
 
+#' RLE plots
+#'
+#' @param data
+#' @param topN
+#' @param title
+#' @param cluster
+#'
+#' @return
+#' @export
+#'
+#' @examples
 ggrle <- function(data, topN = 10, title = NULL, cluster = TRUE){
 
   # Relative log expression
@@ -138,6 +160,20 @@ ggrle <- function(data, topN = 10, title = NULL, cluster = TRUE){
 
 
 
+#' PDF figures
+#'
+#' @param gg
+#' @param file
+#' @param width
+#' @param height
+#' @param dpi
+#' @param units
+#' @param ...
+#'
+#' @return
+#' @export
+#'
+#' @examples
 ggpdfs <- function(gg, file, width = 3000, height = 2500, dpi = 300, units = "px", ...){
 
   if (length(file) > 1) file <- do.call(file.path, as.list(file))
@@ -259,6 +295,18 @@ isoplot <- function(TE, mets = NULL, summarise_by = NULL, dir = NULL, filename =
 
 
 
+#' Isotopologue plotting
+#'
+#' @param mid
+#' @param isodata
+#' @param label
+#' @param cumulative
+#' @param ...
+#'
+#' @return
+#' @export
+#'
+#' @examples
 ggiso <- function(mid, isodata, label = TRUE, cumulative = FALSE, ...){
 
   if (all(is.na(mid))) return(NULL)

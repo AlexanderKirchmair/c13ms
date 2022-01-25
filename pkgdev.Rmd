@@ -44,6 +44,8 @@ use_package("methods")
 use_package("IsoCorrectoR")
 use_package("crayon")
 use_package("rlang")
+use_package("matrixStats")
+
 
 use_package("multcomp", type = "Suggests")
 use_package("glmmTMB", type = "Suggests")

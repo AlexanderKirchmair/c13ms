@@ -91,14 +91,14 @@ preprocessLODs <- function(TE, assay = "raw", split_by = ~ 1, use_blanks = TRUE,
         n <- sapply(unique(fac), function(ff) sum(!is.na(x[ff == fac])))
         if (all(n > 1)) t.test(x ~ fac, alternative = "less", na.action = "na.omit")$p.value else NA
       })
-      res[rowAlls(testdata == 0)] <- 0
+      res[matrixStats::rowAlls(testdata == 0)] <- 0
       if (!is.null(exclude)) res[rownames(testdata) %in% exclude] <- NA
       res
     }))
 
 
     # Data not above blanks:
-    above_blank <- lapply(usenames(data_grouped), function(g){
+    above_blank <- lapply(.usenames(data_grouped), function(g){
       tmp <- data_grouped[[g]]
       mat <- matrix( rep(nat(pval_ab[[g]] <= ptres), ncol(tmp)), ncol = ncol(tmp))
       dimnames(mat) <- dimnames(tmp)
@@ -121,7 +121,7 @@ preprocessLODs <- function(TE, assay = "raw", split_by = ~ 1, use_blanks = TRUE,
 
   if (is.null(above_blank)){ # if test with blank means is not done
 
-    data_grouped <- lapply(usenames(data_grouped), function(g){
+    data_grouped <- lapply(.usenames(data_grouped), function(g){
       tmp <- data_grouped[[g]]
       tmp[!above_LOD[[g]][,colnames(tmp)]] <- NA # set all values below LOD to NA
       tmp
@@ -129,7 +129,7 @@ preprocessLODs <- function(TE, assay = "raw", split_by = ~ 1, use_blanks = TRUE,
 
   } else { # if test with blank means is done
 
-    data_grouped <- lapply(usenames(data_grouped), function(g){
+    data_grouped <- lapply(.usenames(data_grouped), function(g){
       tmp <- data_grouped[[g]]
       tmp[!above_LOD[[g]][,colnames(tmp)] & !above_blank[[g]][,colnames(tmp)] & !is.na(tmp)] <- NaN # set all values below blank means and below LOD to NaN
       tmp[!above_LOD[[g]][,colnames(tmp)] & above_blank[[g]][,colnames(tmp)] & !is.na(tmp)] <- NA # set all values above blank means but below LOD to NA

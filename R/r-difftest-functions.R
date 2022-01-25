@@ -429,7 +429,7 @@ testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
 
     if (length(block) > 0){
       blockfactor <- subset_design[[block]]
-      dupcor <- duplicateCorrelation(object = t(subset_data), block = blockfactor, design = mm)
+      dupcor <- limma::duplicateCorrelation(object = t(subset_data), block = blockfactor, design = mm)
       fit <- limma::lmFit(t(subset_data), mm, block = blockfactor, correlation = dupcor$consensus.correlation)
     } else {
       fit <- limma::lmFit(t(subset_data), mm)
@@ -877,18 +877,6 @@ testBETA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.met
 }
 
 
-
-
-
-
-testZOIB <- function(){
-
-
-
-
-
-
-}
 
 
 

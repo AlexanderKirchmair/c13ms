@@ -111,7 +111,7 @@ normISOSUM <- function(data, isodata, FUN = colSums, ...){
   # Select consistently measured metabolites
   tmp <- data.frame(!is.na(data))
   tmp$metabolite <- isodata$metabolite
-  namean <- sumAssay(tmp, FUN = mean)
+  namean <- .sumAssay(tmp, FUN = mean)
   mets <- setNames(matrixStats::rowMins(data.matrix(namean)), rownames(namean))
   mets <- sort(mets, decreasing = TRUE)
 
@@ -124,14 +124,14 @@ normISOSUM <- function(data, isodata, FUN = colSums, ...){
 
   tmp <- data.frame(imp > 0)
   tmp$metabolite <- isodata[rownames(tmp),]$metabolite
-  zeromean <- sumAssay(tmp, FUN = mean)
+  zeromean <- .sumAssay(tmp, FUN = mean)
   mets <- setNames(matrixStats::rowMins(data.matrix(zeromean)), rownames(zeromean))
   mets <- sort(mets, decreasing = TRUE)
 
   imp$metabolite <- isodata[rownames(imp),]$metabolite
   imp <- imp[imp$metabolite %in% names(mets[mets > mean(mets)]),]
 
-  sumdata <- data.matrix(sumAssay(imp))
+  sumdata <- data.matrix(.sumAssay(imp))
   sizefactors <- FUN(sumdata)
 
 
@@ -149,7 +149,7 @@ normHKM <- function(data, isodata, ...){
 
   data <- data.frame(data)
   data$metabolite <- isodata$metabolite
-  metsums <- sumAssay(data, FUN = sum, na.rm = TRUE)
+  metsums <- .sumAssay(data, FUN = sum, na.rm = TRUE)
   data$metabolite <- NULL
   tmp <- data[rowAlls(metsums != 0),]
 

@@ -1,7 +1,9 @@
 
 
 #' @import methods
+
 #' @importFrom magrittr `%<>%`
+#' @export
 NULL
 
 #' colData

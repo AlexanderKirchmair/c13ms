@@ -217,9 +217,9 @@ rmid <- function(nrow = NULL, ncol = 6, p = NULL, colnames = NULL, size = 10^3){
 
 
 
-# usenames <- function(x){
-#   setNames(names(x), names(x))
-# }
+.usenames <- function(x){
+  setNames(names(x), names(x))
+}
 
 
 

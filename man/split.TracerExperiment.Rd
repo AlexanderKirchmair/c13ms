@@ -4,7 +4,7 @@
 \alias{split.TracerExperiment}
 \title{Split TE}
 \usage{
-\method{split}{TracerExperiment}(x, ...)
+split.TracerExperiment(x, ...)
 }
 \arguments{
 \item{...}{}
