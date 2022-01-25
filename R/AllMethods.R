@@ -1,10 +1,7 @@
 
 # METHODS
 
-#' @import methods
-NULL
-
-
+#' @include AllGenerics.R
 
 
 setMethod(f = "show", signature = "TracerExperiment", definition = function(object){
@@ -83,6 +80,9 @@ setMethod(f = "results", signature = "TracerExperiment", definition = function(o
   if (length(res) == 1) res <- res[[1]]
   res
 })
+
+
+
 
 
 setMethod(f = "assay", signature = "TracerExperiment", definition = function(x, i, type = "iso", met = NULL, ...){
@@ -291,10 +291,16 @@ setMethod(f = "$", signature = "TracerExperiment", definition = function(x, name
   colData(x)[[name]]
 })
 
-
-
-
-setMethod(f = "subset", signature = "TracerExperiment", definition = function(x, factor, ...){
+#' Subset TracerExperiment
+#'
+#' @param x
+#' @param ...
+#'
+#' @return
+#' @export
+#'
+#' @examples
+subset.TracerExperiment <- function(x, factor, ...){
 
   args <- rlang::enquo(factor)
   subres <- dplyr::filter(colData(x), !!args)
@@ -313,6 +319,19 @@ setMethod(f = "subset", signature = "TracerExperiment", definition = function(x,
                             metAssays = submet)
 
   subTE
+
+
+}
+
+
+
+
+
+
+setMethod(f = "subset", signature = "TracerExperiment", definition = function(x, ...){
+
+  subset.TracerExperiment(x, ...)
+
 })
 
 
@@ -339,7 +358,19 @@ setMethod(f = "impute", signature = "TracerExperiment", definition = function(ob
 })
 
 
-setMethod(f = "split", signature = "TracerExperiment", definition = function(x, ...){
+
+
+
+#' Split TE
+#'
+#' @param x
+#' @param ...
+#'
+#' @return
+#' @export
+#'
+#' @examples
+split.TracerExperiment <- function(x, ...){
 
   by <- list(...)[["by"]]
   if (is.null(by)) return(list(x))
@@ -357,15 +388,20 @@ setMethod(f = "split", signature = "TracerExperiment", definition = function(x, 
   fstr <- sapply(f, function(tmp) paste(paste0(cols, " == ", "'", tmp, "'"), collapse = " & ") )
 
   splitTE <- lapply(fstr, function(tmp, x){
-    eval(parse(text = paste0("subset(x, ", tmp, ")")), envir = environment())
+    eval(parse(text = paste0("subset.TracerExperiment(x, ", tmp, ")")), envir = environment())
   }, x = x)
 
   splitTE
+
+
+}
+
+
+setMethod(f = "split", signature = "TracerExperiment", definition = function(x, ...){
+
+  split.TracerExperiment(x, ...)
+
 })
-
-
-
-
 
 
 

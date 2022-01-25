@@ -276,7 +276,8 @@ ggiso <- function(mid, isodata, label = TRUE, cumulative = FALSE, ...){
   df <- stretch(data.frame(mid))
   df$metabolite <- isodata[df$Feature,]$metabolite
   df$iso <- isodata[df$Feature,]$label
-  df$label <- paste0(round(df$Value * 100), "%")
+  df$Value <- df$Value * 100
+  df$label <- paste0(round(df$Value), "%")
   df$Sample <- factor(df$Sample, ordered = TRUE, levels = colnames(mid))
 
   if (cumulative == TRUE){
@@ -291,7 +292,7 @@ ggiso <- function(mid, isodata, label = TRUE, cumulative = FALSE, ...){
   }
 
 
-  gg <- ggcircles(data = droplevels(df), mapping = mapping, ...)
+  gg <- ggcircles(data = droplevels(df), mapping = mapping, ...) + ggplot2::labs(fill = "label %")
 
   gg
 }
@@ -409,7 +410,7 @@ ggcircles <- function(data, mapping = aes(x = x, y = y, fill = value), sym = TRU
 
 
   gg %<>% + ggplot2::scale_fill_gradientn(colours = colorscale,
-                                          limits = c(0,1),
+                                          limits = c(0,100),
                                           na.value = nacolor,
                                           values = (seq_along(colorscale)-1)/(length(colorscale)-1),
                                           guide = ifelse(legend, "colourbar", "none"))

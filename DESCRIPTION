@@ -28,3 +28,16 @@ Suggests:
     missForest,
     betareg,
     contrasts
+Collate: 
+    'AllImports.R'
+    'AllClasses.R'
+    'AllGenerics.R'
+    'AllMethods.R'
+    'r-data-functions.R'
+    'r-difftest-functions.R'
+    'r-imputation-functions.R'
+    'r-isocorrection-functions.R'
+    'r-normalization-functions.R'
+    'r-plotting-functions.R'
+    'r-preprocessing-functions.R'
+    'utils-pipe.R'

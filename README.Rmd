@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 Analysis of isotope-labelled metabolomics data
 
 
-```{r}
+```{r, include = FALSE}
 
 library(c13ms)
 library(magrittr)
@@ -34,7 +34,7 @@ library(magrittr)
 
 ```{r, results='hide', message=FALSE, warning=FALSE}
 
-C13 <- exampleTracerExperiment()
+C13 <- exampleTracerExperiment(nsamples = 6, nmets = 8)
 
 colnames(C13)
 metnames(C13)
@@ -43,9 +43,9 @@ rownames(C13)
 colData(C13)
 C13$group
 
-# C13 %>% subset(group == "A")
-# C13groups <- split(C13, by = ~ group)
-# C13 <- with(C13groups, A + B)
+C13 %>% subset(group == "A")
+C13groups <- split(C13, by = ~ group)
+C13 <- with(C13groups, A + B)
 
 metData(C13)
 isoData(C13)
@@ -75,7 +75,7 @@ C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", method
 C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", method = "beta", assay = "frac")
 C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "iso", method = "beta", assay = "mid")
 
-results(C13, "iso", "beta", "mid") %>% head()
+results(C13, "iso")
 
 ```
 

@@ -67,6 +67,7 @@ R functions
 use_r("AllClasses")
 use_r("AllGenerics")
 use_r("AllMethods")
+use_r("AllImports")
 
 use_r("r-data-functions")
 use_r("r-preprocessing-functions")
@@ -75,6 +76,7 @@ use_r("r-imputation-functions")
 use_r("r-difftest-functions")
 use_r("r-plotting-functions")
 use_r("r-isocorrection-functions")
+
 
 
 ```
@@ -126,6 +128,7 @@ check()
 
 usethis::use_build_ignore("pkgdev.Rmd")
 usethis::use_build_ignore("desktop.ini")
+usethis::use_git_ignore("desktop.ini")
 
 ```
 
