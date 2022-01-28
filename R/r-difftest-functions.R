@@ -3,28 +3,6 @@
 
 
 
-# formula = ~ cell.type + donor
-# sampledata <- C13cells@sampleData
-# # sampledata$cell.type <- factor(sampledata$cell.type)
-#
-# assaydata <- C13cells@assays$norm # corr or norm
-#
-# contrasts <- list("TSCMvsTN" = list("cell.type", c("TSCM", "TN")),
-#                   "TCMvsTSCM" = list("cell.type", c("TCM", "TSCM")),
-#                   "TEMvsTCM" = list("cell.type", c("TEM", "TCM")))
-#
-#
-# # sampledata$cell.type <- relevel(factor(sampledata$cell.type), ref = "TN")
-# # contrasts(sampledata$cell.type)
-# #
-# # con <- makeContrasts(levels = model.matrix(~ 0 + cell.type, sampledata), contrasts = list(TN = "cell.typeTEM - cell.typeTSCM"))
-# # contrasts(sampledata$cell.type) <- con
-#
-
-
-
-
-
 #' Differential abundance testing of isotope labelling data
 #'
 #' @param TE
@@ -87,7 +65,7 @@ diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "is
 
         if (type == "met"){
           confdata$metabolite <- TE@isoData$metabolite
-          confdata <- sumAssay(confdata, FUN = median, na.rm = TRUE)
+          confdata <- .sumAssay(confdata, FUN = median, na.rm = TRUE)
         }
 
         groups <- unique(samples)
@@ -112,21 +90,6 @@ diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "is
 
   TE
 }
-
-
-# res <- diffTest(C13, , method = "ttest", formula = NULL)
-# res@results$ttest
-#
-# ~ Celltype + Sampletype + ID
-
-
-
-
-### Statistical assumptions check ----
-# shapiro.test()
-# car::levene.test()
-
-
 
 
 
@@ -462,15 +425,6 @@ testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
 
 
 
-# random <- ~ 1|donor
-# sampledata$cell.type <- factor(sampledata$cell.type)
-
-# res <- LMM(assaydata, sampledata, formula = formula, random = random, contrasts = contrasts)
-
-
-# testLMM(C13@isoAssays$norm, design = C13@colData, formula = ~ Celltype, random = ~ Donor, contrasts = contrasts)
-
-
 testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FALSE, ...){
 
   stopifnot(requireNamespace("nlme", quietly = TRUE))
@@ -564,12 +518,6 @@ testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FA
 
 
 
-
-# testDREAM(data = C13@isoAssays$norm, design = C13@colData, formula = ~ 0 + Celltype + (1|Donor), contrasts = contrasts)
-
-
-
-
 testDREAM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "holm", ...){
 
   stopifnot(requireNamespace("variancePartition", quietly = TRUE))
@@ -634,33 +582,6 @@ testDREAM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
   results
 
 }
-
-
-
-
-addListNames <- function(list, name = "sample", format = "list"){
-
-  cols <- lapply(list, colnames)
-  cols <- unlist(cols)[!duplicated(unlist(cols))]
-
-  tmp <- lapply(names(list), function(tmpname) cbind(row = rownames(list[[tmpname]]), list[[tmpname]][,cols], tmpname) )
-  res <- Reduce(rbind, tmp)
-  colnames(res) <- c("row", cols, name)
-
-  if (format %in% c("df", "long")) return(res)
-
-  res <- split(res, res[[name]])
-
-  res <- lapply(res, function(tmp){
-    rownames(tmp) <- tmp$row
-    tmp$row <- NULL
-    tmp
-  })
-
-  res
-}
-
-
 
 
 
@@ -880,30 +801,27 @@ testBETA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.met
 
 
 
+addListNames <- function(list, name = "sample", format = "list"){
 
+  cols <- lapply(list, colnames)
+  cols <- unlist(cols)[!duplicated(unlist(cols))]
 
+  tmp <- lapply(names(list), function(tmpname) cbind(row = rownames(list[[tmpname]]), list[[tmpname]][,cols], tmpname) )
+  res <- Reduce(rbind, tmp)
+  colnames(res) <- c("row", cols, name)
 
+  if (format %in% c("df", "long")) return(res)
 
+  res <- split(res, res[[name]])
 
+  res <- lapply(res, function(tmp){
+    rownames(tmp) <- tmp$row
+    tmp$row <- NULL
+    tmp
+  })
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  res
+}
 
 
 

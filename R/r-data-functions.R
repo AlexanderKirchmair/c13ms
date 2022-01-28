@@ -74,12 +74,7 @@ exampleTracerExperiment <- function(nsamples = 10, nmets = 10){
 
   samples <- c(paste0(rep("A", floor(nsamples/2)), 1:floor(nsamples/2)), paste0(rep("B", ceiling(nsamples/2)), 1:ceiling(nsamples/2)))
   mets <- replicate(nmets, paste(sample(letters, sample(2:5)), collapse = ""))
-
-  formulas <- sapply(1:length(mets), function(x){
-    formula <- paste0("C", sample(1:9, 1), "H", sample(1:9, 1), "O", sample(0:3, 1), "N", sample(0:3, 1), "P", sample(0:3, 1), "S", sample(0:3, 1))
-    formula <- gsub(".0", "", formula)
-    formula
-  })
+  formulas <- replicate(nmets, rmolecule())
 
   metData <- data.frame(row.names = mets, Molecule = gsub("1", "", formulas), MSion = NA)
   colData <- data.frame(row.names = samples, name = samples, group = sub("\\d", "", samples))
@@ -101,6 +96,47 @@ exampleTracerExperiment <- function(nsamples = 10, nmets = 10){
 
   makeTracerExperiment(data, metData = metData, colData = colData)
 }
+
+
+
+
+
+
+
+
+
+
+
+#' Generate random molecule formulas with n C atoms
+#'
+#' @param n
+#' @param ...
+#'
+#' @return
+#' @export
+#'
+#' @examples
+rmolecule <- function(n = NULL, ...){
+
+  elements <- c("C", "H", "N", "O", "P", "S")
+  p <- c(0.10, 0.62, 0.02, 0.24, 0.01, 0.01)
+
+  if (is.null(n)) n <- sample(2:8, 1)
+
+  nc <- 0
+  while(nc != n){
+    v <- table(sample(elements, n/p[1], prob = p, replace = TRUE))
+    nc <- v["C"]
+    if (is.null(nc) | is.na(nc)) nc <- 0
+  }
+
+  v <- setNames(as.character(v), names(v))
+  v[v == "1"] <- ""
+  mol <- paste(paste0(names(v), v), collapse = "")
+
+  mol
+}
+
 
 
 
@@ -197,39 +233,9 @@ rmid <- function(nrow = NULL, ncol = 6, p = NULL, colnames = NULL, size = 10^3){
 
 
 
-
-
-
-#
-# checkNA <- function(TE, assay = "imp"){
-#
-#   data <- TE@isoAssays[[assay]]
-#   lod <- TE@isoAssays[["lod"]]
-#
-#   data <- signif(data, 3)
-#   data <-  matrix(as.character(unlist(data)), nrow = nrow(data), dimnames = dimnames(data))
-#
-#   data[is.na(lod)] <- paste0(data[is.na(lod)], "*")
-#   data.frame(data)
-#
-# }
-
-
-
-
 .usenames <- function(x){
   setNames(names(x), names(x))
 }
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -335,10 +341,17 @@ sumMets <- function(TE, assay = "norm", ...){
 
 
 
+
+
+
 .naf <- function (data, ...){
   data[is.na(data)] <- FALSE
   data
 }
+
+
+
+
 
 .cutMID <- function(data){
   data[data < 0] <- 0
@@ -363,11 +376,6 @@ sumMets <- function(TE, assay = "norm", ...){
   }
 
 }
-
-
-
-
-
 
 
 

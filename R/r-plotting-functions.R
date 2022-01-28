@@ -349,45 +349,6 @@ ggiso <- function(mid, isodata, label = TRUE, cumulative = FALSE, ...){
 
 
 
-
-
-
-# df1 <- data.frame(iso = rep(LETTERS[1:6], 4), group = rep(paste0("sample", 1:4), each = 6), frac = runif(24))
-# df2 <- data.frame(iso = rep(LETTERS[1:4], 3), group = rep(paste0("sample", 1:3), each = 4), frac = runif(12))
-# df3 <- data.frame(iso = rep(LETTERS[1:8], 4), group = rep(paste0("sample", 1:4), each = 8), frac = runif(32))
-#
-# p <- list(
-#   a = ggcircles(df1, mapping = aes(iso, group, fill = frac, label = round(frac, 2))),
-#   b = ggcircles(df2, mapping = aes(iso, group, fill = frac, label = round(frac, 2))),
-#   c = ggcircles(df3, mapping = aes(iso, group, fill = frac, label = round(frac, 2)))
-# )
-#
-
-# p$a + theme_circles()
-# p$a + theme_dev(theme_circles())
-# cowplot::plot_grid(plotlist = p, ncol = 1)
-#
-# g <- lapply(p, ggplotGrob)
-# g[[2]]$heights <- g[[1]]$heights
-# g[[3]]$heights <- g[[1]]$heights
-#
-# lapply(g, function(pp) {grid.newpage(); grid.draw(pp)} )
-#
-# pdf(file = "iso_test.pdf")
-#  lapply(g, function(pp) {grid.newpage(); grid.draw(pp)} )
-# dev.off()
-#
-#
-# grid::convertHeight(sum(g[[1]]$heights), "in", TRUE)
-# grid::convertWidth(sum(g[[1]]$widths), "in", TRUE)
-
-
-# df <- data.frame(x = rep(LETTERS[1:6], 4), y = rep(paste0("sample", 1:4), each = 6), z = runif(24))
-# ggcircles(df, mapping = aes(x, y, fill = z, label = round(z, 2), r = z/5))
-# ggcircles(df, mapping = aes(x, y, fill = z, label = round(z, 2)), sym = F)
-
-
-
 ggcircles <- function(data, mapping = aes(x = x, y = y, fill = value), sym = TRUE,
                       r = 0.5, fontsize = 10, labelsize = 5, labelface = 1, labelcolor = "black",
                       colorscale = c("white", "mediumblue"), nacolor = "gray90", legend = TRUE, ...){

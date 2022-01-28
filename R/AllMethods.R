@@ -5,14 +5,16 @@
 
 
 setMethod(f = "show", signature = "TracerExperiment", definition = function(object){
-  .colorcat(paste0(class(object), ", ", format(object.size(object), units = "Mb")), col = rgb(0.4,0.5,1))
-  cat(paste0("isoAssays(", length(object@isoAssays), "):"), names(object@isoAssays), "\n")
-  cat(paste0("metAssays(", length(object@metAssays), "):"), names(object@metAssays), "\n")
-  cat(paste0("qcAssays(", length(object@qcAssays), "):"), names(object@qcAssays), "\n")
-  cat(paste0("results(", length(object@results), "):"), names(object@results), "\n")
-  message("-use method 'astidy' to get data as a long dataframe")
-  message("-use method 'assay' to get data as a 2D matrix")
-  message("-use method 'array' to get data as a 3D array")
+  .colorcat( paste0(class(object), ", ", format(object.size(object), units = "Mb")), col = "#090296")
+  col <- "#CFCFCF"
+  cat(.colorcat( paste0("isoAssays(", length(object@isoAssays), "):"), add = "", col = col), names(object@isoAssays), "\n")
+  cat(.colorcat( paste0("metAssays(", length(object@metAssays), "):"), add = "", col = col), names(object@metAssays), "\n")
+  cat(.colorcat( paste0("qcAssays(", length(object@qcAssays), "):"), add = "", col = col), names(object@qcAssays), "\n")
+  cat(.colorcat( paste0("results(", length(object@results), "):"), add = "", col = col), names(object@results), "\n")
+  col <- "#757575"
+  .colorcat("-use method 'astidy' to get data as a long dataframe", col = col)
+  .colorcat("-use method 'assay' to get data as a 2D matrix", col = col)
+  .colorcat("-use method 'array' to get data as a 3D array", col = col)
 })
 
 

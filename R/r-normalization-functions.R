@@ -151,7 +151,7 @@ normHKM <- function(data, isodata, ...){
   data$metabolite <- isodata$metabolite
   metsums <- .sumAssay(data, FUN = sum, na.rm = TRUE)
   data$metabolite <- NULL
-  tmp <- data[rowAlls(metsums != 0),]
+  tmp <- data[matrixStats::rowAlls(metsums != 0),]
 
   # Select housekeeping metabolites: low var, similar labelling
   vars <- rowVars(data.matrix(tmp)) / rowMeans(data.matrix(tmp), na.rm = TRUE)
