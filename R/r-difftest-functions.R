@@ -71,7 +71,7 @@ diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "is
         groups <- unique(samples)
         g1 <- rowMeans(data.matrix(confdata[,names(samples)[samples == groups[1]]]))
         g2 <- rowMeans(data.matrix(confdata[,names(samples)[samples == groups[2]]]))
-        conf <- rowMaxs(cbind(g1, g2), na.rm = TRUE)
+        conf <- matrixStats::rowMaxs(cbind(g1, g2), na.rm = TRUE)
         conf <- setNames(conf, rownames(confdata))
         tmpres$conf <- conf[rownames(tmpres)]
         tmpres
@@ -347,11 +347,6 @@ testLM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.metho
 
 
 
-
-
-# testLIMMA(data = C13@metAssays$frac, design = C13@colData, formula = ~ Celltype + (1|Donor), contrasts = contrasts)
-# testLIMMA(data = C13@metAssays$frac, design = C13@colData, formula = ~ Celltype + Donor, contrasts = contrasts)
-
 testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "holm", ...){
 
   stopifnot(requireNamespace("limma", quietly = TRUE))
@@ -624,8 +619,7 @@ testBETAREG <- function(data, design, formula, contrasts, logged = FALSE, p.adj.
     nares <- data.frame(pval = nares, diff = nares)
 
     res <- lapply(subset_data, function(conc){
-      #conc <- subset_data[[i]]
-      #print(i)
+
       if (length(.unique.na(conc)) <= 1) return(nares)
       if (any(.naf(conc == 0)) | any(.naf(conc == 1))){
         message("Data contain exact 0/1 values - transforming...")
@@ -693,7 +687,7 @@ testBETAREG <- function(data, design, formula, contrasts, logged = FALSE, p.adj.
 
 
 
-testBETA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "holm", ...){
+testBETA <- function(data, design, formula, contrasts, zotrans = NULL, logged = FALSE, p.adj.method = "holm", verbose = FALSE, ...){
 
   stopifnot(requireNamespace("glmmTMB", quietly = TRUE))
   stopifnot(requireNamespace("multcomp", quietly = TRUE))
@@ -703,6 +697,10 @@ testBETA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.met
   data <- as.data.frame(t(data))
   data[is.na(data)] <- NA
   formula <- update(formula, conc ~  0 + .)
+
+  if (is.null(zotrans)) zotrans <- is.null(list(...)[["ziformula"]])
+
+  family <- glmmTMB::beta_family(link = "logit")
 
 
   ### Contrasts and formula ----
@@ -716,13 +714,15 @@ testBETA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.met
     subset_design <- design[rownames(subset_data), intersect(all.vars(formula), colnames(design)),drop = FALSE]
 
     nares <- setNames(rep(NA, length(tmpsubset)), names(tmpsubset))
-    nares <- data.frame(pval = nares, diff = nares, lfc = nares)
+    nares <- data.frame(pval = nares, diff = nares, diff.mean = nares, lfc = nares)
 
     res <- lapply(subset_data, function(conc){
-      #conc <- subset_data[[i]]
-      #print(i)
+
+
+      conc_orig <- conc
       if (length(.unique.na(conc)) <= 1) return(nares)
-      if (any(.naf(conc == 0)) | any(.naf(conc == 1))){
+      if (zotrans & (any(.naf(conc == 0)) | any(.naf(conc == 1)))){
+        zotrans <- TRUE
         message("Data contain exact 0/1 values - transforming...")
         conc <- (conc * (length(conc)-1) + 0.5) / length(conc)
       }
@@ -741,21 +741,27 @@ testBETA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.met
       })
 
       if (any(!sapply(contr, is.null))){
+        sres <- NULL
         tryCatch({
 
           # Model
-          fit <- glmmTMB::glmmTMB(formula, subset_design, family = list(family = "beta", link = "logit"))
+          # fit <- glmmTMB::glmmTMB(formula, subset_design, family = list(family = "beta", link = "logit"), ...) # much faster?
+          fit <- glmmTMB::glmmTMB(formula, subset_design, family = family, ...)
           sres <- summary(fit)
 
+
         },
-        error = function(x){return(nares)})
+        error = function(x){ NULL })
       } else {
         return(nares)
       }
 
+      if (is.null(sres)) return(nares)
+
       contr <- contr[sapply(contr, function(tmp) all(tmp %in% rownames(sres$coefficients$cond)))]
 
       contr.glht <- sapply(contr, function(g){paste0(g[1], " - ", g[2], " = 0")})
+      if (verbose) .colorcat(contr.glht)
       contr.glht <- contr.glht[!sapply(contr, is.null)]
 
       res <- summary(multcomp::glht(fit, linfct = contr.glht), test = multcomp::adjusted("none"))
@@ -763,17 +769,21 @@ testBETA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.met
 
       b <- res$coef[unique(unlist(contr))]
 
-      est <- exp(b)/(1+exp(b))
-      est <- (est * sres$nobs - 0.5) / (sres$nobs - 1)
-
-      est[.naf(est > 1)] <- 1
-      est[.naf(est < 0)] <- 0
+      if (zotrans){
+        est <- exp(b)/(1+exp(b))
+        est <- (est * sres$nobs - 0.5) / (sres$nobs - 1)
+      } else {
+        est <- b
+      }
 
       diff <- as.numeric(sapply(contr, function(tmp) setNames(est[tmp[1]] - est[tmp[2]], NULL) ))
+      subset_design$conc_orig <- conc_orig
+      means <- dplyr::group_by_at(subset_design, 1) %>% dplyr::summarise(diff = mean(conc_orig)) %>% dplyr::pull(diff)
+      diff.mean <- setNames(means[2] - means[1], NULL)
       fc <- as.numeric(sapply(contr, function(tmp) setNames(est[tmp[1]] / est[tmp[2]], NULL) ))
       lfc <- log2(fc)
 
-      data.frame(pval = setNames(pval, names(tmpsubset)), diff, lfc)
+      data.frame(pval = setNames(pval, names(tmpsubset)), diff, diff.mean, lfc)
     })
 
     contr.res <- rownames(res[[1]])

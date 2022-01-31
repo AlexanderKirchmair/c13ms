@@ -71,9 +71,6 @@ normalizeIsoAssay <- function(isoAssay, method = ~ IS + SUM, isodata = NULL, met
   }
 
 
-  ### Add wrapper to NOREVA ???
-
-
   stopifnot(dim(data) == dim(isoAssay))
   data
 }
@@ -154,7 +151,7 @@ normHKM <- function(data, isodata, ...){
   tmp <- data[matrixStats::rowAlls(metsums != 0),]
 
   # Select housekeeping metabolites: low var, similar labelling
-  vars <- rowVars(data.matrix(tmp)) / rowMeans(data.matrix(tmp), na.rm = TRUE)
+  vars <- matrixStats::rowVars(data.matrix(tmp)) / rowMeans(data.matrix(tmp), na.rm = TRUE)
   w <- colSums(data.matrix(tmp * 1/vars), na.rm = TRUE)
   w <- w / mean(w)
 
@@ -276,10 +273,10 @@ vmn <- function(data, groups, maxit = 10000){
     means[means == 0] <- NA
 
     # within-group
-    var_min <- sapply(groups_uni, function(g) rowVars(tmp[,naf(groups == g)], na.rm = TRUE) / means[,g] )
+    var_min <- sapply(groups_uni, function(g) matrixStats::rowVars(tmp[,naf(groups == g)], na.rm = TRUE) / means[,g] )
 
     # between-group
-    var_max <- rowVars(means, na.rm = TRUE) / rowMeans(means, na.rm = TRUE)
+    var_max <- matrixStats::rowVars(means, na.rm = TRUE) / rowMeans(means, na.rm = TRUE)
 
     val <- log(mean(var_min, na.rm = TRUE)) + 1 / log(mean(var_max, na.rm = TRUE))
     val

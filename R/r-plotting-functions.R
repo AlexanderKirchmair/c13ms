@@ -21,7 +21,7 @@ variancePartition <- function(data, design, formula = NULL, rm.na = FALSE){
 
   design <- design[, sapply(design, function(tmpcol) length(unique(tmpcol))>1 )]
   design <- design[, sapply(design, function(tmpcol) any(table(tmpcol) > 1) )]
-  design <- design[!rowAnys(is.na(design)),]
+  design <- design[!matrixStats::rowAnys(is.na(design)),]
 
   cols <- intersect(colnames(data), rownames(design))
   data <- data[,cols]
@@ -46,9 +46,9 @@ variancePartition <- function(data, design, formula = NULL, rm.na = FALSE){
     }
   }
 
-  if (any(rowVars(data.matrix(data), na.rm = TRUE) == 0)){
+  if (any(matrixStats::rowVars(data.matrix(data), na.rm = TRUE) == 0)){
     message("Removing zero-variance features...")
-    data <- data[rowVars(data.matrix(data)) != 0,]
+    data <- data[matrixStats::rowVars(data.matrix(data)) != 0,]
   }
 
 
@@ -87,12 +87,12 @@ ggrle <- function(data, topN = 10, title = NULL, cluster = TRUE){
   min_val <- round(min_val, abs(round(log10(min_val))))
   rledata[rledata == 0] <- min_val
 
-  logratios <- log10( rledata / rowMedians(rledata, na.rm = TRUE) )
+  logratios <- log10( rledata / matrixStats::rowMedians(rledata, na.rm = TRUE) )
   logratios[is.nan(logratios)] <- NA
 
   tmp <- logratios
-  tmp[rowMedians(rledata, na.rm = TRUE) == 0,] <- sd(logratios[is.finite(logratios)], na.rm = TRUE)
-  tmp[rowMedians(rledata, na.rm = TRUE) == 0,] <- tmp[rowMedians(rledata, na.rm = TRUE) == 0,] * sign(rledata[rowMedians(rledata, na.rm = TRUE) == 0,])
+  tmp[matrixStats::rowMedians(rledata, na.rm = TRUE) == 0,] <- sd(logratios[is.finite(logratios)], na.rm = TRUE)
+  tmp[matrixStats::rowMedians(rledata, na.rm = TRUE) == 0,] <- tmp[matrixStats::rowMedians(rledata, na.rm = TRUE) == 0,] * sign(rledata[matrixStats::rowMedians(rledata, na.rm = TRUE) == 0,])
 
   tmp[tmp == -Inf] <- min(logratios[is.finite(logratios)], na.rm = T) - sd(logratios[is.finite(logratios)], na.rm = TRUE)
   tmp[tmp == -Inf] <- max(logratios[is.finite(logratios)], na.rm = T) + sd(logratios[is.finite(logratios)], na.rm = TRUE)

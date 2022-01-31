@@ -31,11 +31,11 @@ library(magrittr)
 
 
 
-### Introduction
+## Introduction
 
 ```{r, results='hide', message=FALSE, warning=FALSE}
 
-C13 <- exampleTracerExperiment(nsamples = 6, nmets = 8)
+C13 <- exampleTracerExperiment(nsamples = 6, nmets = 5)
 
 colnames(C13)
 metnames(C13)
@@ -44,8 +44,8 @@ rownames(C13)
 colData(C13)
 C13$group
 
-C13 %>% subset(group == "A")
-C13groups <- split(C13, by = ~ group)
+C13 %>% subset.TracerExperiment(group == "A")
+C13groups <- split.TracerExperiment(C13, by = ~ group)
 C13 <- with(C13groups, A + B)
 
 metData(C13)
@@ -76,7 +76,7 @@ C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", method
 C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", method = "beta", assay = "frac")
 C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "iso", method = "beta", assay = "mid")
 
-results(C13, "iso")
+results(C13, "iso")$beta$groupBvsA %>% head(10)
 
 ```
 
