@@ -19,7 +19,7 @@
 #' @export
 #'
 #' @examples
-imputeTE <- function(TE, assay = "lod", original = "raw", nan = NA, na = "", split_by = ~ 1, maxNAfrac_per_group = 0.2, exclude = NULL, type = "iso", ...){
+imputeTE <- function(TE, assay = "lod", original = "raw", nan = NA, na = "", split_by = ~ 1, maxNAfrac_per_group = 0.5, exclude = NULL, type = "iso", ...){
 
   data.org <-  .getAssays(TE, assay = assay, type = type)
   data <- data.org
@@ -37,13 +37,28 @@ imputeTE <- function(TE, assay = "lod", original = "raw", nan = NA, na = "", spl
     message("missForest imputation")
     res <- missForest::missForest(data)
     imp <- res$ximp
+
   } else if (na == "LOD50"){
     message("LOD50 imputation")
     lods <- TE@qcAssays$lod
     lods <- lods[rownames(data), colnames(data)]
-
     imp <- data
     imp[is.na(imp)] <- lods[is.na(imp)] * 0.5
+
+  } else if (na == "linsubLODs"){
+    message("weighted subtraction of LODs from raw")
+    raw <- .getAssays(TE, assay = original, type = type)
+    lods <- TE@qcAssays$lod
+    loqs <- TE@qcAssays$loq
+    lods <- lods[rownames(raw), colnames(raw)]
+    loqs <- loqs[rownames(raw), colnames(raw)]
+
+    linw <- (raw - lods)/(loqs - lods)
+    tmp <- raw - lods * linw
+    tmp[.naf(tmp < 0)] <- 0
+
+    imp <- data
+    imp[is.na(data.matrix(imp))] <- tmp[is.na(data.matrix(imp))]
 
   } else {
     message("No method selected, using original values")
@@ -59,18 +74,18 @@ imputeTE <- function(TE, assay = "lod", original = "raw", nan = NA, na = "", spl
 
   imp <- imp[rownames(data), colnames(data)]
 
-  # Split into groups
-  data_split <- split_by(data, design, formula = split_by)
-  imp_split <- split_by(imp, design, formula = split_by)
-
-  imp_split <- lapply(seq_along(imp_split), function(tmp){
-    ix <- rowMeans(is.na(data_split[[tmp]])) > maxNAfrac_per_group
-    imp_split[[tmp]][ix,] <- data_split[[tmp]][ix,]
-    imp_split[[tmp]]
-  })
-
-  imp <- unsplit_by(imp_split)
-  imp <- imp[,colnames(data.org)]
+  # # Split into groups
+  # data_split <- split_by(data, design, formula = split_by)
+  # imp_split <- split_by(imp, design, formula = split_by)
+  #
+  # imp_split <- lapply(seq_along(imp_split), function(tmp){
+  #   ix <- rowMeans(is.na(data_split[[tmp]])) > maxNAfrac_per_group
+  #   imp_split[[tmp]][ix,] <- data_split[[tmp]][ix,]
+  #   imp_split[[tmp]]
+  # })
+  #
+  # imp <- unsplit_by(imp_split)
+  # imp <- imp[,colnames(data.org)]
   imp[rownames(imp) %in% exclude,] <- data.org[rownames(imp) %in% exclude,]
 
   imp

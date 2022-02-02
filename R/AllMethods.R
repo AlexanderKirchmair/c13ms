@@ -339,8 +339,8 @@ setMethod(f = "subset", signature = "TracerExperiment", definition = function(x,
 
 setMethod(f = "normalize", signature = "TracerExperiment", definition = function(object, method, assay = NULL, ...){
 
-  if (is.null(assay)) assay <- rev(setdiff(names(object@isoAssays), "norm"))[1]
-  if (is.null(object@metAssays[[assay]])) object@metAssays[[assay]] <- sumMets(object, assay)
+  if (is.null(assay)) assay <- "corr"
+  if (is.null(object@metAssays[[assay]])) object@metAssays[[assay]] <- sumMets(object, assay, na.rm = TRUE)
 
   object@isoAssays$norm <- normalizeIsoAssay(isoAssay = object@isoAssays[[assay]],
                                              metAssay = object@metAssays[[assay]],

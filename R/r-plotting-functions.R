@@ -3,7 +3,6 @@
 
 
 
-
 #' variancePartition
 #'
 #' @param data
@@ -321,7 +320,7 @@ ggiso <- function(mid, isodata, label = TRUE, cumulative = FALSE, ...){
     mid <- tmp
   }
 
-  df <- stretch(data.frame(mid))
+  df <- .stretch(data.frame(mid))
   df$metabolite <- isodata[df$Feature,]$metabolite
   df$iso <- isodata[df$Feature,]$label
   df$Value <- df$Value * 100

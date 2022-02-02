@@ -62,10 +62,11 @@ diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "is
         tmpres <- res[[tmpcontr]]
         samples <- getContrastSamples(design, contrasts[[tmpcontr]])
         confdata <- TE@qcAssays$conf
+        confdata[is.na(data.matrix(data))] <- NA
 
         if (type == "met"){
           confdata$metabolite <- TE@isoData$metabolite
-          confdata <- .sumAssay(confdata, FUN = median, na.rm = TRUE)
+          confdata <- .sumAssay(confdata, FUN = min, na.rm = TRUE)
         }
 
         groups <- unique(samples)
@@ -566,7 +567,7 @@ testDREAM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
   ### Results ----
 
   results <- Reduce('c', results)
-  results <- addListNames(results, name = "contrast", format = "long")
+  results <- .addListNames(results, name = "contrast", format = "long")
   results$padj_all <- p.adjust(results$pval, method = p.adj.method)
   results <- split(results, results$contrast)
   results <- lapply(results, function(tmp) {
@@ -622,7 +623,6 @@ testBETAREG <- function(data, design, formula, contrasts, logged = FALSE, p.adj.
 
       if (length(.unique.na(conc)) <= 1) return(nares)
       if (any(.naf(conc == 0)) | any(.naf(conc == 1))){
-        message("Data contain exact 0/1 values - transforming...")
         conc <- (conc * (length(conc)-1) + 0.5) / length(conc)
       }
 
@@ -723,7 +723,6 @@ testBETA <- function(data, design, formula, contrasts, zotrans = NULL, logged = 
       if (length(.unique.na(conc)) <= 1) return(nares)
       if (zotrans & (any(.naf(conc == 0)) | any(.naf(conc == 1)))){
         zotrans <- TRUE
-        message("Data contain exact 0/1 values - transforming...")
         conc <- (conc * (length(conc)-1) + 0.5) / length(conc)
       }
 
@@ -811,7 +810,7 @@ testBETA <- function(data, design, formula, contrasts, zotrans = NULL, logged = 
 
 
 
-addListNames <- function(list, name = "sample", format = "list"){
+.addListNames <- function(list, name = "sample", format = "list"){
 
   cols <- lapply(list, colnames)
   cols <- unlist(cols)[!duplicated(unlist(cols))]

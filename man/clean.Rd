@@ -6,10 +6,11 @@
 \usage{
 clean(
   TE,
-  assay = NULL,
+  assay = "norm",
   split_by = ~1,
   exclude = "internal.standard",
-  maxNAfrac_per_group = 0.2,
+  remove_imp = TRUE,
+  max_na = 1/3,
   type = "iso",
   ...
 )

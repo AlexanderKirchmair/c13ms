@@ -4,7 +4,15 @@
 \alias{isoEnrichment}
 \title{Fractional enrichment}
 \usage{
-isoEnrichment(TE, assay = "norm", na.rm.iso = TRUE, na.rm = FALSE, ...)
+isoEnrichment(
+  TE,
+  assay = "norm",
+  max_na = 0,
+  max_imp = 0.25,
+  na.rm.iso = TRUE,
+  na.rm = FALSE,
+  ...
+)
 }
 \arguments{
 \item{...}{}

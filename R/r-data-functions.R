@@ -2,6 +2,7 @@
 # DATA HANDLING FUNCTIONS
 
 
+
 #' Make new TracerExperiment
 #'
 #' @param data
@@ -187,6 +188,13 @@ rmid <- function(nrow = NULL, ncol = 6, p = NULL, colnames = NULL, size = 10^3){
 
 
 
+#' Order isotopologue labels numerically
+#'
+#' @param x
+#' @param pattern
+#'
+#' @return
+#'
 .orderLabels <- function(x, pattern = "m"){
   xlevels <- sort(as.numeric(gsub(paste0(".*", pattern), "", unique(x))))
   xlevels <- paste0(pattern, xlevels)
@@ -197,6 +205,18 @@ rmid <- function(nrow = NULL, ncol = 6, p = NULL, colnames = NULL, size = 10^3){
 
 
 
+#' Function to get default assay
+#'
+#' @param TE
+#' @param type
+#' @param last
+#' @param assay
+#' @param not
+#' @param names_only
+#' @param ...
+#'
+#' @return
+#'
 .getAssays <- function(TE, type = "iso", last = FALSE, assay = NULL, not = NULL, names_only = FALSE, ...){
 
   res <- list()
@@ -290,7 +310,19 @@ metnames <- function(x, ...){
 
 
 
-stretch <- function(mat){
+
+
+
+
+#' Simple pivot_longer wrapper for numeric matrices
+#'
+#' @param mat
+#'
+#' @return
+#' @export
+#'
+#' @examples
+.stretch <- function(mat){
   long <- as.data.frame(tidyr::pivot_longer(dplyr::mutate(mat, id = rownames(mat)), -id))
   rownames(long) <- paste0(long$name, "_", long$id)
   long <- dplyr::rename(.data = long, Sample = name, Feature = id, Value = value)
@@ -311,15 +343,166 @@ stretch <- function(mat){
 #' @export
 #'
 #' @examples
-sumMets <- function(TE, assay = "norm", ...){
+sumMets <- function(TE, assay = "norm", max_na = 0.1, max_imp = 0.25, ...){
 
-  assaydata <- data.frame(TE@isoAssays[[assay]], TE@isoData[,c("metabolite"), drop = FALSE])
-  assaydata <- assaydata[rowMeans(is.na(TE@isoAssays[[assay]])) != 1,, drop = FALSE]
+  assaydata <- data.frame(TE@isoAssays[[assay]])
+  mets <- TE@isoData[,c("metabolite"), drop = FALSE]
 
-  res <- .sumAssay(assaydata, ...)
-  res[unique(TE@isoData$metabolite),]
+  sumdata <- .sumAssay(cbind(mets, assaydata), na.rm = TRUE)
 
+  # remove metabolites with too many missing isotopologues
+  nafraction <- .sumAssay(cbind(mets, is.na(assaydata)), FUN = mean)
+  sumdata[nafraction > max_na] <- NA
+
+  # remove metabolites with too many imputed isotopologues
+  if (!is.null(TE@qcAssays$na) & !is.null(max_imp)){
+    imp <- TE@qcAssays$na
+    impfraction <- .sumAssay(cbind(mets, imp), FUN = mean)
+    sumdata[impfraction > max_imp] <- NA
+  }
+
+  sumdata[unique(TE@isoData$metabolite),]
 }
+
+
+
+
+
+
+#' Mass isotopomer distribution (MID)
+#'
+#' @param TE
+#' @param assay
+#' @param ...
+#'
+#' @return
+#' @export
+#'
+#' @examples
+MID <- function(TE, assay = "norm", max_na = 0, max_imp = 0.25, remove_imp = TRUE, ...){
+
+  data <- cbind(TE@isoAssays[[assay]], TE@isoData[,c("metabolite"), drop = FALSE])
+  sumdata <- sumMets(TE, assay = assay, max_na = max_na, max_imp = max_imp, ...)
+  sumdata <- sumdata[data$metabolite,]
+
+  data$metabolite <- NULL
+  fractions <- data / sumdata
+
+  fractions[.naf(data == 0)] <- 0
+  fractions[is.na(data)] <- NA
+  fractions[is.nan(data.matrix(data))] <- NaN
+
+  if (remove_imp == TRUE){
+    imp <- as.matrix(TE@qcAssays$na)
+    fractions[imp] <- NA
+  }
+
+  stopifnot(all.equal(dimnames(data), dimnames(fractions)))
+  fractions
+}
+
+
+
+
+
+
+
+
+#' Fractional enrichment
+#'
+#' @param TE
+#' @param assay
+#' @param na.rm.iso
+#' @param na.rm
+#' @param ...
+#'
+#' @return
+#' @export
+#'
+#' @examples
+isoEnrichment <- function(TE, assay = "norm", max_na = 0, max_imp = 0.25, na.rm.iso = TRUE, na.rm = FALSE, ...){
+
+  fractions <- MID(TE, assay = assay, max_na = max_na, max_imp = max_imp, ...)
+  fractions$id <- rownames(fractions)
+
+  df <- data.frame(id = rownames(TE@isoData), metabolite = TE@isoData$metabolite)
+  df <- dplyr::full_join(df, fractions, by = "id")
+  rownames(df) <- df$id
+
+  dfl <- split(df, df$metabolite)
+
+  frac_enrich <- t(sapply(dfl, function(tmp){
+    w <- seq(0, 1, length = nrow(tmp))
+    if (na.rm.iso) tmp[rowMeans(is.na(tmp)) == 1,-(1:2)] <- 0
+    colSums(tmp[,-(1:2)] * w, na.rm = na.rm)
+  }))
+
+  if (!is.null(TE@metData)) frac_enrich <- frac_enrich[rownames(TE@metData),]
+
+
+  frac_enrich
+}
+
+
+
+
+
+
+#' Subset isotobologue data by metabolites
+#'
+#' @param data
+#' @param met
+#' @param isodata
+#'
+#' @return
+#' @export
+#'
+#' @examples
+subsetMet <- function(data, met = NULL, isodata = NULL){
+
+  if (any(met %in% rownames(data))){
+    tmp <- tmp[met,,drop = FALSE]
+  } else {
+    tmp <- data[rownames(isodata),,drop = FALSE]
+    tmp <- tmp[isodata$metabolite %in% met,,drop = FALSE]
+  }
+  tmp
+}
+
+
+
+
+
+#
+#
+# split_by <- function(data, design, formula){
+#
+#   design <- design[colnames(data),]
+#
+#   if (length(labels(terms(formula))) > 0){
+#     groups <- apply(design[,labels(terms(formula)), drop = FALSE], 1, paste0,  collapse = "_")
+#     stopifnot(all(names(groups) == colnames(data)))
+#     data_split <- lapply(setNames(unique(groups), unique(groups)), function(g) data[,groups == g, drop = FALSE])
+#   } else {
+#     data_split <- list(data)
+#   }
+#
+#   data_split
+# }
+#
+#
+# unsplit_by <- function(list){
+#
+#   if (length(list) == 1) return(list[[1]])
+#
+#   stopifnot(all(Reduce(intersect, lapply(list, rownames)) %in% rownames(list[[1]])))
+#   list <- lapply(list, function(tmp) tmp[rownames(list[[1]]),, drop = FALSE])
+#   Reduce(cbind, list)
+#
+# }
+
+
+
 
 
 
@@ -379,131 +562,9 @@ sumMets <- function(TE, assay = "norm", ...){
 
 
 
-
-
-
-#' Mass isotopomer distribution (MID)
-#'
-#' @param TE
-#' @param assay
-#' @param na.rm.sum
-#' @param ...
-#'
-#' @return
-#' @export
-#'
-#' @examples
-MID <- function(TE, assay = "norm", na.rm.sum = TRUE, ...){
-
-  data <- cbind(TE@isoAssays[[assay]], TE@isoData[,c("metabolite"), drop = FALSE])
-  sumdata <- sumMets(TE, assay = assay, na.rm = na.rm.sum)
-  sumdata <- sumdata[data$metabolite,]
-
-  data$metabolite <- NULL
-  fractions <- data / sumdata
-
-  fractions[.naf(data == 0)] <- 0
-  fractions[is.na(data)] <- NA
-  fractions[is.nan(data.matrix(data))] <- NaN
-
-  stopifnot(all.equal(dimnames(data), dimnames(fractions)))
-  fractions
-}
-
-
-
-
-
-
-
-
-#' Fractional enrichment
-#'
-#' @param TE
-#' @param assay
-#' @param na.rm.iso
-#' @param na.rm
-#' @param ...
-#'
-#' @return
-#' @export
-#'
-#' @examples
-isoEnrichment <- function(TE, assay = "norm", na.rm.iso = TRUE, na.rm = FALSE, ...){
-
-  fractions <- MID(TE, assay = assay)
-  fractions$id <- rownames(fractions)
-
-  df <- data.frame(id = rownames(TE@isoData), metabolite = TE@isoData$metabolite)
-  df <- dplyr::full_join(df, fractions, by = "id")
-  rownames(df) <- df$id
-
-  dfl <- split(df, df$metabolite)
-
-  frac_enrich <- t(sapply(dfl, function(tmp){
-    w <- seq(0, 1, length = nrow(tmp))
-    if (na.rm.iso) tmp[rowMeans(is.na(tmp)) == 1,-(1:2)] <- 0
-    colSums(tmp[,-(1:2)] * w, na.rm = na.rm)
-  }))
-
-  if (!is.null(TE@metData)) frac_enrich <- frac_enrich[rownames(TE@metData),]
-
-  frac_enrich
-}
-
-
-
-
-
-
-subsetMet <- function(data, met = NULL, isodata = NULL){
-
-  if (any(met %in% rownames(data))){
-    tmp <- tmp[met,,drop = FALSE]
-  } else {
-    tmp <- data[rownames(isodata),,drop = FALSE]
-    tmp <- tmp[isodata$metabolite %in% met,,drop = FALSE]
-  }
-  tmp
-}
-
-
-
-
-
-
-
-split_by <- function(data, design, formula){
-
-  design <- design[colnames(data),]
-
-  if (length(labels(terms(formula))) > 0){
-    groups <- apply(design[,labels(terms(formula)), drop = FALSE], 1, paste0,  collapse = "_")
-    stopifnot(all(names(groups) == colnames(data)))
-    data_split <- lapply(setNames(unique(groups), unique(groups)), function(g) data[,groups == g, drop = FALSE])
-  } else {
-    data_split <- list(data)
-  }
-
-  data_split
-}
-
-
-unsplit_by <- function(list){
-
-  if (length(list) == 1) return(list[[1]])
-
-  stopifnot(all(Reduce(intersect, lapply(list, rownames)) %in% rownames(list[[1]])))
-  list <- lapply(list, function(tmp) tmp[rownames(list[[1]]),, drop = FALSE])
-  Reduce(cbind, list)
-
-}
-
-
 .colorcat <- function(str = "text", col = rgb(1,1,1), add = "\n"){
   cat( crayon::make_style(col)(paste0(str, add)) )
 }
-
 
 
 
@@ -511,8 +572,5 @@ unsplit_by <- function(list){
   x <- unique(x,  ...)
   x[!is.na(x)]
 }
-
-
-
 
 

@@ -3,10 +3,6 @@
 
 
 
-
-
-
-
 #' Estimate LOD/LOQ values from QC samples
 #'
 #' @param TE
@@ -19,9 +15,7 @@
 #' @export
 #'
 #' @examples
-estimateLODs <- function(TE, qc = "blanks", exclude = "internal.standard", FUN = NULL, ...){
-
-  ### Adds LOD estimates to isoData
+estimateLOQs <- function(TE, qc = "blanks", exclude = "internal.standard", sdLOD = 0, sdLOQ = 2, FUN = NULL, ...){
 
   if (is.null(FUN)) FUN <- function(x, sds = 2, ...){  rowMeans(x, na.rm = TRUE) + sds*apply(x, 1, sd, na.rm = TRUE) }
 
@@ -29,34 +23,32 @@ estimateLODs <- function(TE, qc = "blanks", exclude = "internal.standard", FUN =
   if (is.null(data)) stop("Error: QC samples not found!")
 
   exclude <- intersect(exclude, rownames(data))
-  data[exclude] <- 0 # set LOD to 0 for 'excluded' metabolites
 
   blankmean <- rowMeans(data, na.rm = TRUE)
-  LOD <- FUN(data, ...)
+  LOD <- FUN(data, sds = sdLOD, ...)
+  LOQ <- FUN(data, sds = sdLOQ, ...)
+
+  # set LOD to 0 for 'excluded' metabolites
+  LOD[exclude] <- 0
+  LOQ[exclude] <- 0
 
   TE@isoData$blankmean <- blankmean[rownames(TE@isoData)]
   TE@isoData$LOD <- LOD[rownames(TE@isoData)]
+  TE@isoData$LOQ <- LOQ[rownames(TE@isoData)]
+
+  LODdf <- data.frame(matrix(rep(LOD, nrow(TE@colData)), ncol = nrow(TE@colData)))
+  dimnames(LODdf) <- list(rownames(TE@isoData), rownames(TE@colData))
+  TE@qcAssays$lod <- LODdf
+
+  LOQdf <- data.frame(matrix(rep(LOQ, nrow(TE@colData)), ncol = nrow(TE@colData)))
+  dimnames(LOQdf) <- list(rownames(TE@isoData), rownames(TE@colData))
+  TE@qcAssays$loq <- LOQdf
 
   TE
 }
 
 
-
-#' Preprocessing based on LOD/LOQ estimates
-#'
-#' @param TE
-#' @param assay
-#' @param split_by
-#' @param use_blanks
-#' @param blanks
-#' @param exclude
-#' @param ptres
-#' @param ...
-#'
-#' @return
-#' @export
-#'
-#' @examples
+# old version
 preprocessLODs <- function(TE, assay = "raw", split_by = ~ 1, use_blanks = TRUE, blanks = "blanks", exclude = "internal.standard", ptres = 0.05, ...){
 
 
@@ -168,54 +160,62 @@ preprocessLODs <- function(TE, assay = "raw", split_by = ~ 1, use_blanks = TRUE,
 
 
 
-
-
-
-#' Cleaning of data
+#' Preprocessing based on LOD/LOQ estimates
 #'
 #' @param TE
 #' @param assay
-#' @param split_by
+#' @param LODassay
+#' @param LOQassay
 #' @param exclude
-#' @param maxNAfrac_per_group
+#' @param ...
 #'
 #' @return
 #' @export
 #'
 #' @examples
-clean <- function(TE, assay = NULL, split_by = ~ 1, exclude = "internal.standard", maxNAfrac_per_group = 0.2, type = "iso", ...){
+preprocessLOQs <- function(TE, assay = "raw", LODassay = "lod", LOQassay = "loq", exclude = "internal.standard", ...){
 
-  if (is.null(assay)) assay <- .getAssays(TE, assay = assay, last = TRUE, names_only = TRUE, type = type)
-  data <- TE@isoAssays[[assay]]
-  design <- TE@colData
+  data <- .getAssays(TE, assay = assay, type = "iso")
   if (is.null(data)) stop("Error: Data not found!")
+  data_preprocessed <- data
+
   exclude <- intersect(exclude, rownames(data))
   if (length(exclude) == 0) exclude <- NULL
 
-  # Split into groups
-  if (length(labels(terms(split_by))) > 0){
-    groups <- apply(design[,labels(terms(split_by)),drop = FALSE], 1, paste0,  collapse = "_")
-    stopifnot(all(names(groups) == colnames(data)))
-    data_grouped <- lapply(setNames(unique(groups), unique(groups)), function(g) data[,groups == g,drop = FALSE])
-  } else {
-    data_grouped <- list(data)
+  LODs <- .getAssays(TE, assay = LODassay, type = "qc")
+  LOQs <- .getAssays(TE, assay = LOQassay, type = "qc")
+
+  above_LOQ <- NULL
+  if (!is.null(LOQassay)){
+    stopifnot(all.equal(dimnames(LOQs), dimnames(data)))
+    if (!is.null(exclude)) LOQs[rownames(LOQs) %in% exclude,] <- 0
+    above_LOQ <- .naf(data > LOQs)
+    data_preprocessed[!above_LOQ] <- NA
   }
 
-  ### NA: Missing values ----
-  data_grouped <- lapply(data_grouped, function(tmp){
-    tmp[rowMeans(is.na(tmp)) > maxNAfrac_per_group & !rownames(tmp) %in% exclude,] <- NA
-    tmp
-  })
-
-  data_grouped <- lapply(data_grouped, function(tmp) tmp[rownames(data),])
-  data_clean <- Reduce(cbind, data_grouped)
-  data_clean <- data_clean[rownames(data), colnames(data)]
-  data_clean[is.nan(data.matrix(data))] <- NaN
+  above_LOD <- NULL
+  if (!is.null(LODassay)){
+    stopifnot(all.equal(dimnames(LODs), dimnames(data)))
+    if (!is.null(exclude)) LODs[rownames(LODs) %in% exclude,] <- 0
+    above_LOD <- .naf(data > LODs)
+    data_preprocessed[!above_LOD] <- NaN
+  }
 
 
-  TE@isoAssays[[assay]] <- data_clean
+  # keep zeros
+  data_preprocessed[naf(data == 0)] <- 0
+  TE@isoAssays$lod <- data_preprocessed
+
+  # confidence values (0 = LOD, 1 = LOQ)
+  conf <- (data - LODs)/(LOQs - LODs)
+  conf[LOQs == 0] <- Inf
+  TE@qcAssays$conf <- conf
+
+  # add results in assay format
+  TE@qcAssays$nan <- is.nan(data.matrix(TE@isoAssays$lod))
+  TE@qcAssays$na <- is.na(data.matrix(TE@isoAssays$lod)) & !is.nan(data.matrix(TE@isoAssays$lod))
+
   TE
-
 }
 
 
@@ -231,18 +231,62 @@ clean <- function(TE, assay = NULL, split_by = ~ 1, exclude = "internal.standard
 
 
 
+#' Cleaning of data
+#'
+#' @param TE
+#' @param assay
+#' @param split_by
+#' @param exclude
+#' @param maxNAfrac_per_group
+#'
+#' @return
+#' @export
+#'
+#' @examples
+clean <- function(TE, assay = "norm", split_by = ~ 1, exclude = "internal.standard", remove_imp = TRUE, max_na = 1/3, type = "iso", ...){
+
+  if (is.null(assay)) assay <- .getAssays(TE, assay = assay, last = TRUE, names_only = TRUE, type = type)
+  data <- TE@isoAssays[[assay]]
+  design <- TE@colData
+  if (is.null(data)) stop("Error: Data not found!")
+  exclude <- intersect(exclude, rownames(data))
+  if (length(exclude) == 0) exclude <- NULL
 
 
 
+  # Remove imputed values
+  if (remove_imp == TRUE & !is.null(TE@qcAssays$na)){
+    .colorcat("Setting imputed values to NA...")
+    imp <- as.matrix(TE@qcAssays$na)
+    data[imp] <- NA
+  }
 
 
+  # Split into groups
+  if (length(labels(terms(.split_by))) > 0){
+    groups <- apply(design[,labels(terms(.split_by)),drop = FALSE], 1, paste0,  collapse = "_")
+    stopifnot(all(names(groups) == colnames(data)))
+    data_grouped <- lapply(setNames(unique(groups), unique(groups)), function(g) data[,groups == g,drop = FALSE])
+  } else {
+    data_grouped <- list(data)
+  }
+
+  ### NA: Missing values ----
+  data_grouped <- lapply(data_grouped, function(tmp){
+    tmp[rowMeans(is.na(tmp)) > max_na & !rownames(tmp) %in% exclude,] <- NA
+    tmp
+  })
+
+  data_grouped <- lapply(data_grouped, function(tmp) tmp[rownames(data),])
+  data_clean <- Reduce(cbind, data_grouped)
+  data_clean <- data_clean[rownames(data), colnames(data)]
+  data_clean[is.nan(data.matrix(data))] <- NaN
 
 
+  TE@isoAssays[["clean"]] <- data_clean
+  TE
 
-
-
-
-
+}
 
 
 

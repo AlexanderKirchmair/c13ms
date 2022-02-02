@@ -11,7 +11,7 @@ imputeTE(
   nan = NA,
   na = "",
   split_by = ~1,
-  maxNAfrac_per_group = 0.2,
+  maxNAfrac_per_group = 0.5,
   exclude = NULL,
   type = "iso",
   ...

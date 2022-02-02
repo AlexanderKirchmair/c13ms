@@ -4,7 +4,7 @@
 \alias{sumMets}
 \title{Summarize isotopologues to metabolites}
 \usage{
-sumMets(TE, assay = "norm", ...)
+sumMets(TE, assay = "norm", max_na = 0.1, max_imp = 0.25, ...)
 }
 \arguments{
 \item{...}{}

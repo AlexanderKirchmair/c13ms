@@ -3,8 +3,6 @@
 
 
 
-
-
 #' Normalization of isotopologue abundance data
 #'
 #' @param isoAssay
@@ -50,6 +48,7 @@ normalizeIsoAssay <- function(isoAssay, method = ~ IS + SUM, isodata = NULL, met
   for (m in methods){
 
     if (m %in% methods.colData){
+
       # normalization factors from sample data
       cat("Normalization using", m, "\n")
       data <- normColData(data, colData[,m])
@@ -68,6 +67,7 @@ normalizeIsoAssay <- function(isoAssay, method = ~ IS + SUM, isodata = NULL, met
     } else {
       stop(paste0("Method", m, " not found!"))
     }
+
   }
 
 
@@ -142,22 +142,25 @@ normISOSUM <- function(data, isodata, FUN = colSums, ...){
 
 
 # Housekeeping metabolite
-normHKM <- function(data, isodata, ...){
+normHKM <- function(data, isodata, sumdata, ...){
 
   data <- data.frame(data)
   data$metabolite <- isodata$metabolite
-  metsums <- .sumAssay(data, FUN = sum, na.rm = TRUE)
+
   data$metabolite <- NULL
-  tmp <- data[matrixStats::rowAlls(metsums != 0),]
+
+  tmp <- data[matrixStats::rowAlls(.naf(sumdata != 0)),]
 
   # Select housekeeping metabolites: low var, similar labelling
   vars <- matrixStats::rowVars(data.matrix(tmp)) / rowMeans(data.matrix(tmp), na.rm = TRUE)
+
   w <- colSums(data.matrix(tmp * 1/vars), na.rm = TRUE)
   w <- w / mean(w)
 
   normdata <- t( t(data.matrix(data))/ w )
-  normdata
+  normdata[.naf(data == 0)] <- 0
 
+  data.frame(normdata)
 }
 
 
