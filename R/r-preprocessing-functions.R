@@ -263,8 +263,8 @@ clean <- function(TE, assay = "norm", split_by = ~ 1, exclude = "internal.standa
 
 
   # Split into groups
-  if (length(labels(terms(.split_by))) > 0){
-    groups <- apply(design[,labels(terms(.split_by)),drop = FALSE], 1, paste0,  collapse = "_")
+  if (length(labels(terms(split_by))) > 0){
+    groups <- apply(design[,labels(terms(split_by)),drop = FALSE], 1, paste0,  collapse = "_")
     stopifnot(all(names(groups) == colnames(data)))
     data_grouped <- lapply(setNames(unique(groups), unique(groups)), function(g) data[,groups == g,drop = FALSE])
   } else {
