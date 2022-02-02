@@ -20,7 +20,7 @@
 #' @export
 #'
 #' @examples
-diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "iso", assay = "norm", logged = FALSE, p.adj.method = "holm", conf = TRUE, ...){
+diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "iso", assay = "norm", assay_ref = "clean", logged = FALSE, p.adj.method = "holm", conf = TRUE, ...){
 
 
   ### Input ----
@@ -34,9 +34,12 @@ diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "is
   # results: results from each method (i.e. a list for each contrast)
   results <- lapply(setNames(method, method), function(testfun){
     testfun <- paste0("test", toupper(testfun))
-    do.call(what = testfun, args = c(list("data" = data, "design" = design,
-                                          "formula" = formula, "contrasts" = contrasts,
-                                          "logged" = logged, "p.adj.method" = p.adj.method, ...)))
+    do.call(what = testfun, args = c(list("data" = data,
+                                          "design" = design,
+                                          "formula" = formula,
+                                          "contrasts" = contrasts,
+                                          "logged" = logged,
+                                          "p.adj.method" = p.adj.method, ...)))
   })
 
 
@@ -61,8 +64,16 @@ diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "is
 
         tmpres <- res[[tmpcontr]]
         samples <- getContrastSamples(design, contrasts[[tmpcontr]])
-        confdata <- TE@qcAssays$conf
-        confdata[is.na(data.matrix(data))] <- NA
+        confdata <- data.matrix(TE@qcAssays$conf)
+
+        if (type == "iso"){
+          confdata[is.na(data.matrix(data))] <- NA
+
+        } else {
+          tmp <- .getAssays(TE, assay = assay_ref, type = "iso")
+          confdata[is.na(data.matrix(tmp))] <- NA
+          confdata <- data.frame(confdata)
+        }
 
         if (type == "met"){
           confdata$metabolite <- TE@isoData$metabolite

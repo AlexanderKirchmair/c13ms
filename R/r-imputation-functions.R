@@ -19,7 +19,7 @@
 #' @export
 #'
 #' @examples
-imputeTE <- function(TE, assay = "lod", original = "raw", nan = NA, na = "", split_by = ~ 1, maxNAfrac_per_group = 0.5, exclude = NULL, type = "iso", ...){
+imputeTE <- function(TE, assay = "lod", original = "raw", nan = NA, na = "", split_by = ~ 1, maxNAfrac_per_group = 0.5, exclude = NULL, type = "iso", complete = FALSE,  ...){
 
   data.org <-  .getAssays(TE, assay = assay, type = type)
   data <- data.org
