@@ -108,12 +108,12 @@ setMethod(f = "metData<-", signature = "TracerExperiment", definition = function
   }
 })
 
-# setMethod(f = "colData<-", signature = "TracerExperiment", definition = function(x, ..., value){
-#   x@sampleData <- value
-#   if (validObject(x)){
-#     return(x)
-#   }
-# })
+setMethod(f = "colData<-", signature = "TracerExperiment", definition = function(x, ..., value){
+  x@colData <- value
+  if (validObject(x)){
+    return(x)
+  }
+})
 
 setMethod(f = "isoData<-", signature = "TracerExperiment", definition = function(object, value){
   object@isoData <- value

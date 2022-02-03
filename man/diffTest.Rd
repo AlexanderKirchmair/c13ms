@@ -11,6 +11,7 @@ diffTest(
   method = "ttest",
   type = "iso",
   assay = "norm",
+  assay_ref = "clean",
   logged = FALSE,
   p.adj.method = "holm",
   conf = TRUE,

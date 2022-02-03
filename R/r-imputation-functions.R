@@ -60,6 +60,13 @@ imputeTE <- function(TE, assay = "lod", original = "raw", nan = NA, na = "", spl
     imp <- data
     imp[is.na(data.matrix(imp))] <- tmp[is.na(data.matrix(imp))]
 
+  } else if (na == "subLODs"){
+    message("subtraction of LODs from raw")
+    raw <- .getAssays(TE, assay = original, type = type)
+    lods <- TE@qcAssays$lod
+    imp <- raw - lods
+    imp[.naf(imp < 0)] <- 0
+
   } else {
     message("No method selected, using original values")
     raw <- .getAssays(TE, assay = original, type = type)
@@ -88,7 +95,7 @@ imputeTE <- function(TE, assay = "lod", original = "raw", nan = NA, na = "", spl
   # imp <- imp[,colnames(data.org)]
   imp[rownames(imp) %in% exclude,] <- data.org[rownames(imp) %in% exclude,]
 
-  imp
+  data.frame(imp)
 
 }
 

@@ -14,6 +14,7 @@ imputeTE(
   maxNAfrac_per_group = 0.5,
   exclude = NULL,
   type = "iso",
+  complete = FALSE,
   ...
 )
 }

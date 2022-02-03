@@ -686,8 +686,6 @@ testBETAREG <- function(data, design, formula, contrasts, logged = FALSE, p.adj.
 
   ### Results ----
 
-
-
   results <- Reduce('c', results)
   results
 
@@ -755,7 +753,6 @@ testBETA <- function(data, design, formula, contrasts, zotrans = NULL, logged = 
         tryCatch({
 
           # Model
-          # fit <- glmmTMB::glmmTMB(formula, subset_design, family = list(family = "beta", link = "logit"), ...) # much faster?
           fit <- glmmTMB::glmmTMB(formula, subset_design, family = family, ...)
           sres <- summary(fit)
 
@@ -777,6 +774,8 @@ testBETA <- function(data, design, formula, contrasts, zotrans = NULL, logged = 
       res <- summary(multcomp::glht(fit, linfct = contr.glht), test = multcomp::adjusted("none"))
       pval <- setNames(as.numeric(res$test$pvalues), names(contr.glht))[names(tmpsubset)]
 
+      if (verbose) .colorcat(contr.glht, col = "red")
+      if (verbose) .colorcat(pval, col = "blue")
       b <- res$coef[unique(unlist(contr))]
 
       if (zotrans){
@@ -787,9 +786,20 @@ testBETA <- function(data, design, formula, contrasts, zotrans = NULL, logged = 
       }
 
       diff <- as.numeric(sapply(contr, function(tmp) setNames(est[tmp[1]] - est[tmp[2]], NULL) ))
+
+      # calculate also mean differences for comparison
+      f <- lapply(tmpsubset, function(tmp) tmp[sapply(tmp, length) == 2] )
       subset_design$conc_orig <- conc_orig
-      means <- dplyr::group_by_at(subset_design, 1) %>% dplyr::summarise(diff = mean(conc_orig)) %>% dplyr::pull(diff)
-      diff.mean <- setNames(means[2] - means[1], NULL)
+      diff.mean <- sapply(f, function(tmp){
+        tmpdf <- subset_design[subset_design[[names(tmp)]] %in% tmp[[1]],]
+        means <- dplyr::group_by_at(tmpdf, names(tmp)) %>%
+          dplyr::summarise(diff = mean(conc_orig, na.rm = TRUE))
+        means <- setNames(means[["diff"]], means[[names(tmp)]])
+        d <- means[tmp[[1]][1]] - means[tmp[[1]][2]]
+        setNames(d, NULL)
+      })
+      if (verbose) .colorcat(diff.mean, col = "red")
+
       fc <- as.numeric(sapply(contr, function(tmp) setNames(est[tmp[1]] / est[tmp[2]], NULL) ))
       lfc <- log2(fc)
 
@@ -809,11 +819,8 @@ testBETA <- function(data, design, formula, contrasts, zotrans = NULL, logged = 
 
   ### Results ----
 
-
-
   results <- Reduce('c', results)
   results
-
 
 }
 

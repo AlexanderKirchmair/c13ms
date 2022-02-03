@@ -246,16 +246,17 @@ normVSN <- function(sumdata, fractions, isodata, ...){
 
 
 
-normVMN <- function(sumdata, fractions, coldata, isodata, group, ...){
+normVMN <- function(data, fractions, coldata, isodata, group, ...){
 
-  norm <- vmn(sumdata, groups = coldata[,group])
+  norm <- vmn(data, groups = coldata[,group])
   fractions[rownames(isodata),] * norm[isodata$metabolite,]
 
 }
 
 
-vmn <- function(data, groups, maxit = 10000){
+vmn <- function(sumdata, groups, maxit = 10000, ...){
 
+  data <- sumdata
   col_weights <- mean(colMeans(data, na.rm = TRUE)) / colMeans(data, na.rm = TRUE)
   row_weights <- rep(1, nrow(data))
 

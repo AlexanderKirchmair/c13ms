@@ -12,6 +12,11 @@ NULL
 #' @export
 NULL
 
+#' @importFrom SummarizedExperiment colData<-
+#' @name colData<-
+#' @export
+NULL
+
 #' assay
 #' @importFrom SummarizedExperiment assay
 #' @name assay

@@ -50,6 +50,10 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, at
 
   stopifnot(requireNamespace("IsoCorrectoR"))
 
+  .colorcat("Natural isotope abundance correction with IsoCorrectoR", col = "#77a4c7")
+  .colorcat("https://doi.org/10.1038/s41598-018-36293-4", col = "#77a4c7")
+
+
   # Set tmp dir
   if (is.null(tmpdir)) tmpdir <- "./IsoCorrector"
   if (!dir.exists(tmpdir)){
@@ -123,8 +127,8 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, at
     paste(paste(format(tmp_use$`Isotopic Composition`, scientific = FALSE), tmp_use$shift, sep = "_"), collapse = "/")
   })
 
-  elements$`Tracer isotope mass shift` <- ifelse(elements$Element == atom, "1", "") ########
-  elements$`Tracer purity` <- ifelse(elements$Element == atom, tracer_purity, "") #####
+  elements$`Tracer isotope mass shift` <- ifelse(elements$Element == atom, "1", "") # only high-res?
+  elements$`Tracer purity` <- ifelse(elements$Element == atom, tracer_purity, "") #
 
   elements.write <- c(paste(colnames(elements), collapse = ","),
                       gsub(",,", "", apply(elements, 1, function(tmp){paste(tmp, collapse = ",")})))
@@ -156,17 +160,44 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, at
     message("Error in IsoCorrectoR::IsoCorrection!")
   } else if (allresults == TRUE){
     return(icresults)
+
   } else {
 
-    relerror <- icresults$results$RelativeResiduals
-    relerror[is.na(relerror)] <- 0
-    relerror[!is.finite(data.matrix(relerror))] <- 0
+
+    # low values can be kept/replaced by zero
+
+    resid <- res$results$Residuals
+    rownames(resid) <- sub(paste0("_", atom),"_m", rownames(resid))
+    resid <- resid[rownames(assaydata),]
 
     res <- icresults$results$Corrected
-    if (!is.na(tol_error)) res[abs(relerror) > tol_error] <- NA
-
     rownames(res) <- sub(paste0("_", atom),"_m", rownames(res))
     res <- res[rownames(assaydata),]
+
+    relerror <- icresults$results$RelativeResiduals
+    rownames(relerror) <- sub(paste0("_", atom),"_m", rownames(relerror))
+    relerror <- relerror[rownames(assaydata),]
+
+    # error relative to isotopologue
+    relerror[is.na(relerror)] <- 0
+    relerror[!is.finite(data.matrix(relerror))] <- 0
+    relerror[naf(assaydata == 0)] <- NA
+    relerror[naf(res == 0)] <- NA
+
+    # error relative to metabolite
+    resid[naf(assaydata == 0)] <- NA
+    resid[naf(res == 0)] <- NA
+    resid$met <- gsub("_m.*$", "", rownames(resid))
+    sumdata <- resid %>% dplyr::group_by(met) %>% dplyr::summarise(dplyr::across(.fns = sum, na.rm = TRUE))
+    sumdata <- as.data.frame(sumdata[match(resid$met, sumdata$met),])
+    sumdata$met <- NULL
+    rownames(sumdata) <- rownames(resid)
+    resid$met <- NULL
+    resid_rel_total <- resid / sumdata
+
+    if (is.null(tol_error)) tol_error <- NA
+    if (!is.na(tol_error)) res[naf(abs(relerror) > tol_error) & naf(abs(resid_rel_total) > tol_error)] <- NA
+
     res <- lapply(setNames(colnames(assaydata), colnames(assaydata)), function(tmp){
       if (!is.null(res[[tmp]])){ res[[tmp]] } else { rep(NA, nrow(res))}
     })
@@ -233,7 +264,6 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, at
 
 
 
-
 .add1 <- function(tmp){
   # split string and get elements
   tmp.el <- unlist(strsplit(tmp, "(?<=.)(?=[[:upper:]])", perl = T)) # split at each uppercase letter
@@ -245,32 +275,6 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, at
   res <- paste(tmp.res, collapse = "")
   res
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

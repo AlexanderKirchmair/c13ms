@@ -85,6 +85,26 @@ use_r("r-isocorrection-functions")
 
 
 
+```{r}
+
+# contrasts <- list("TSCMvsTN_cells" = list("Celltype" = c("TSCM", "TN"), "Sampletype" = "cells", "Tracer" = "13C"),
+#                   "TCMvsTN_cells" = list("Celltype" = c("TCM", "TN"), "Sampletype" = "cells", "Tracer" = "13C"),
+#                   "TEMvsTN_cells" = list("Celltype" = c("TEM", "TN"), "Sampletype" = "cells", "Tracer" = "13C"))
+# 
+# C13 <- readRDS("../../projects/CD8/data/metabolomics/differentiation/C13.rds")
+# 
+
+```
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
 
@@ -142,6 +162,12 @@ usethis::use_git_ignore("desktop.ini")
 devtools::build_readme()
 
 ```
+
+
+
+
+
+
 
 
 Install the package
