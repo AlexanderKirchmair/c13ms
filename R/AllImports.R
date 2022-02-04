@@ -3,6 +3,7 @@
 #' @import methods
 
 #' @importFrom magrittr `%<>%`
+#' @name `%<>%`
 #' @export
 NULL
 
@@ -44,6 +45,13 @@ NULL
 #' @name normalize
 #' @export
 NULL
+
+#' @importFrom BiocGenerics subset
+#' @name subset
+#' @export
+NULL
+
+
 
 
 

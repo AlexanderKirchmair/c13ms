@@ -4,7 +4,7 @@
 \alias{subset.TracerExperiment}
 \title{Subset TracerExperiment}
 \usage{
-\method{subset}{TracerExperiment}(x, factor, ...)
+subset.TracerExperiment(x, factor, ...)
 }
 \arguments{
 \item{...}{}

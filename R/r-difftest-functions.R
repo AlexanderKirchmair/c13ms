@@ -1,6 +1,7 @@
 
 # DIFFERENTIAL ABUNDANCE TESTING FUNCTIONS
 
+# Pre-filtering options (faster, MHT)
 
 
 #' Differential abundance testing of isotope labelling data
@@ -127,6 +128,10 @@ diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "is
 
 getContrastSamples <- function(design, contrast, paired = NULL){
 
+  if (!is.null(paired)){
+    if (paired == FALSE) paired <- NULL
+  }
+
   to_subset <- sapply(contrast, length) == 1
   to_compare <- sapply(contrast, length) == 2
 
@@ -209,17 +214,16 @@ getSubsets <- function(contrasts){
 testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, var.equal = FALSE, p.adj.method = "holm", paired = FALSE,  ...){
 
   if (paired == TRUE) message("Warning: Paired t-test requires matching non-NA samples .")
-
-
-  paired <- labels(terms(formula))
+  if (paired == TRUE & !is.null(formula))  paired <- labels(terms(formula))
 
   results <- lapply(contrasts, function(contr){
 
     x <- getContrastSamples(design, contr, paired)
 
-    data <- cbind(data[,names(x)[x == levels(x)[2]]], data[,names(x)[x == levels(x)[1]]])
+    data <- cbind(data[,names(x)[x == levels(x)[2]]], data[,names(x)[x == levels(x)[1]]]) ###
 
     ttest_res <- data.frame(t(apply(data, 1, function(conc){
+
 
       if (!is.null(paired)){
         ix_na <- setNames(is.na(conc[names(x[x == levels(x)[1]])]) | is.na(conc[names(x[x == levels(x)[2]])]), NULL)
@@ -230,22 +234,24 @@ testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, v
       n <- sapply(unique(x), function(xx) sum(!is.na(conc[xx == x]))) # check if both groups have enough data
 
       if (all(n > 1)) {
-        res <- t.test(conc ~ x, var.equal = varequal, paired = !is.null(paired), na.action = "na.omit")
+        res <- t.test(conc ~ x, var.equal = var.equal, paired = paired, na.action = "na.omit")
         if (is.null(paired)){
           # ratio of means
           # exp if data are logged?
           est <- setNames(res$estimate, gsub("mean in group ", "", names(res$estimate)))
           fc <- as.numeric(est[levels(x)[2]] / est[levels(x)[1]])
+          diff <- as.numeric(est[levels(x)[2]] - est[levels(x)[1]])
         } else {
           # mean or ratios
           # exp if data are logged?
           fc <- mean(conc[x == levels(x)[2]] / conc[x == levels(x)[1]], na.rm = TRUE)
+          diff <- mean(conc[x == levels(x)[2]] - conc[x == levels(x)[1]], na.rm = TRUE)
         }
 
 
-        c("pval" = res$p.value, "lfc" = fc)
+        c("pval" = res$p.value, "lfc" = fc, "diff" = diff)
       } else {
-        c("pval" = NA, "lfc" = NA)
+        c("pval" = NA, "lfc" = NA, "diff" = NA)
       }
 
     })))
@@ -270,10 +276,10 @@ testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, v
 
 
 # testLM(data = C13@metAssays$frac, design = C13@colData, formula = ~ Celltype + Donor, contrasts = contrasts)
-
+# add missing log-transform...
 testLM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "holm", ...){
 
-  stopifnot(requireNamespace("contrasts", quietly = TRUE))
+  stopifnot(requireNamespace("contrast", quietly = TRUE))
 
   ### Input arguments ----
 
@@ -432,7 +438,7 @@ testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
 
 
 
-testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FALSE, ...){
+testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FALSE, p.adj.method = "holm", ...){
 
   stopifnot(requireNamespace("nlme", quietly = TRUE))
   stopifnot(requireNamespace("multcomp", quietly = TRUE))
@@ -442,13 +448,12 @@ testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FA
   data <- as.data.frame(t(data))
   data[is.na(data)] <- NA
 
-  if (logged == FALSE) data <- log2(data+1) ###################
-
   form.fixed <- update(formula, conc ~ .)
 
   levels <- lapply(contrasts, function(tmp) setNames(paste0(tmp[[1]][1], " - ", tmp[[1]][2], " = 0"), names(tmp)[1]))
 
   class <- labels(terms(formula))
+  class <- gsub(".*\\(|\\).*", "", class)
   classes <- apply(sapply(class, function(tmp) as.character(design[[tmp]]) ), 1, paste, collapse = "")
 
   contr.names <- apply(sapply(contrasts, "[[", 1), 2, paste, collapse = " - ")
@@ -457,9 +462,10 @@ testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FA
   nadf$est <- NA
   nadf$pval <- NA
 
+
   res <- lapply(data, function(conc){
 
-    data.lme <- data.frame("conc" = as.numeric(conc), "classes" = classes, design[rownames(data),,drop = FALSE])
+    data.lme <- data.frame("conc" = as.numeric(conc), "classes" = classes, design[rownames(data), class, drop = FALSE])
     data.lme <- droplevels(na.omit(data.lme))
 
     if (nrow(data.lme) < 2) return(nadf)
@@ -471,39 +477,49 @@ testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FA
     data.lme <- droplevels(data.lme[ix,])
 
     tmplevels <- levels[sapply(contrasts, function(tmp) sapply(names(tmp), function(col) all(tmp[[col]] %in% data.lme[[col]]) ) )]
-    lmecontrasts <- lapply(setNames(unique(names(tmplevels)), unique(names(tmplevels))), function(tmpfactor) tmplevels[names(tmplevels) == tmpfactor] )
+    if (length(tmplevels) == 0) return(nadf)
+    lmecontrasts <- lapply(tmplevels, function(tmp) setNames(list(tmp), names(tmp)) )
+    lmecontrasts <- unlist(unlist(lmecontrasts, recursive = FALSE, use.names = FALSE))
+    if (length(lmecontrasts) == 1){
+      lmecontrasts <- as.list(lmecontrasts)
+    } else {
+      lmecontrasts <- as.list(unstack(stack(lmecontrasts)))
+    }
 
 
     if (all(data.lme$conc == 0) | any(sapply(data.lme[,class], function(tmp) length(unique(tmp)) < 2 ))) return(nadf)
 
     # fit
-    lmefit <- nlme::lme(fixed = form.fixed, random = random, data = data.lme)
+    lmefit <- nlme::lme(fixed = form.fixed, random = random, data = data.lme, control = nlme::lmeControl(maxIter = 100, returnObject = TRUE))
+
     if (length(lmecontrasts) == 0) return(nadf)
 
     # tests
-    lmetest <- multcomp::glht(lmefit, linfct = do.call(mcp, tmp))
+    lmetest <- multcomp::glht(lmefit, linfct = do.call(multcomp::mcp, lmecontrasts))
     conc.res <- summary(lmetest, test = multcomp::adjusted("none"))
-    dfres <- data.frame("est" = conc.res$test$coefficients, "pval" = conc.res$test$pvalues)[contr.names,]
+    dfres <- data.frame("est" = conc.res$test$coefficients, "pval" = conc.res$test$pvalues)
+    rownames(dfres) <- names(contr.names)[match(rownames(dfres), contr.names)]
+    dfres <- dfres[names(contr.names),]
     rownames(dfres) <- names(contr.names)
     dfres
 
   })
 
 
-
-
-  # est <- t(sapply(res, function(tmp) setNames(tmp[,"est"], rownames(tmp)) ))
-  # pval <- t(sapply(res, function(tmp) setNames(tmp[,"pval"], rownames(tmp)) ))
-  # padj <- matrix(p.adjust(pval), nrow = nrow(pval), dimnames = dimnames(pval))
+  if (logged == FALSE) cols <- c("diff", "pval") else cols <- c("lfc", "pval")
 
   results <- lapply(seq(contrasts), function(i){
     tmpres <- t(sapply(res, function(tmp) as.numeric(tmp[i,]) ))
-    colnames(tmpres) <-  c("lfc", "pval")
-    tmpres <- data.frame(tmpres)
-    return(tmpres)
+    colnames(tmpres) <-  cols
+    data.frame(tmpres)
   })
-  names(results) <- names(contrasts)
 
+  results <- lapply(results, function(tmp){
+    tmp$padj <- p.adjust(tmp$pval, method = p.adj.method)
+    tmp
+  })
+
+  names(results) <- names(contrasts)
   return(results)
 }
 

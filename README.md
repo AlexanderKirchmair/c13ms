@@ -20,14 +20,15 @@ rownames(C13)
 colData(C13)
 C13$group
 
-C13 %>% subset.TracerExperiment(group == "A")
-C13groups <- split.TracerExperiment(C13, by = ~ group)
+C13 %>% subset(group == "A")
+C13groups <- split(C13, by = ~ group)
 C13 <- with(C13groups, A + B)
 
 metData(C13)
 isoData(C13)
 
 assay(C13, "raw")
+sumMets(C13, assay = "raw")
 ```
 
 ## Workflow
@@ -36,9 +37,10 @@ A typical analysis workflow may look like as demonstrated below:
 
 ``` r
 C13 %<>% impute(assay = "raw")
-C13 %<>% correctIso()
-C13 %<>% normalize(method = ~ COLSUM)
-Normalization using normCOLSUM 
+C13 %<>% correctIso(assay = "imp")
+Natural isotope abundance correction with IsoCorrectoR
+https://doi.org/10.1038/s41598-018-36293-4
+C13 %<>% normalize(method = ~ COLSUM, assay = "corr")
 
 assay(C13, "mid") <- MID(C13)
 assay(C13, "frac", type = "met") <- isoEnrichment(C13)
@@ -46,22 +48,22 @@ assay(C13, "norm", type = "met") <- sumMets(C13)
 
 contrasts <- list(groupBvsA = list("group" = c("B", "A")))
 
-C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", method = "limma", assay = "norm")
-C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", method = "beta", assay = "frac")
-C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "iso", method = "beta", assay = "mid")
+C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", assay = "norm", method = "ttest")
+C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", assay = "frac", method = "beta")
+C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "iso",  assay = "mid", method = "beta")
 
-results(C13, "iso")$beta$groupBvsA %>% head(10)
-             pval          diff     diff.mean          lfc      padj  padj_all
-px_m0 0.630368674 -0.0027860118 -0.0021105230          NaN 1.0000000 1.0000000
-px_m1 0.957132333 -0.0003542332 -0.0002350762 -0.005849624 1.0000000 1.0000000
-px_m2 0.246364374 -0.0138197302 -0.0113483127 -0.169089034 1.0000000 1.0000000
-px_m3 0.380089787  0.0144526177  0.0112631208  0.137676947 1.0000000 1.0000000
-px_m4 0.581177532  0.0070210115  0.0061646972  0.101597502 1.0000000 1.0000000
-px_m5 0.612258505 -0.0042603922 -0.0037339060 -0.042915285 1.0000000 1.0000000
-bu_m0 0.732354338 -0.0023970466 -0.0014748034  0.089204932 1.0000000 1.0000000
-bu_m1 0.082233431  0.0270033117  0.0228890818  0.154138964 1.0000000 1.0000000
-bu_m2 0.008371333 -0.0062167291 -0.0061709099 -1.347592829 0.2678826 0.2678826
-bu_m3 0.771454893  0.0011751634  0.0006223577 -0.020244870 1.0000000 1.0000000
+results(C13, "iso", "mid", "beta") %>% head(10)
+              pval         diff    diff.mean         lfc      padj  padj_all
+tckf_m0 0.65195845  0.005488545  0.006471073 -0.23063907 1.0000000 1.0000000
+tckf_m1 0.24777611 -0.018914890 -0.015974592 -0.03639141 1.0000000 1.0000000
+tckf_m2 0.38518133  0.012006549  0.009503519  0.09391927 1.0000000 1.0000000
+il_m0   0.13774189  0.015003779  0.013223614  0.56109072 1.0000000 1.0000000
+il_m1   0.01097978  0.027295479  0.022499881  0.32896312 0.3623326 0.3623326
+il_m2   0.14395523 -0.021606634 -0.017760468 -0.11601580 1.0000000 1.0000000
+il_m3   0.10466884 -0.012620259 -0.010409753 -0.91284594 1.0000000 1.0000000
+il_m4   0.35798488 -0.008875287 -0.007553275 -0.05096433 1.0000000 1.0000000
+xck_m0  0.10694367 -0.003469224 -0.002906331 -0.39001716 1.0000000 1.0000000
+xck_m1  0.24230893 -0.003768474 -0.002985851  0.16436710 1.0000000 1.0000000
 ```
 
 ## Visualization

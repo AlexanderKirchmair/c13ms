@@ -25,7 +25,7 @@ Analysis of isotope-labelled metabolomics data
 ```{r, include = FALSE}
 
 library(c13ms)
-library(magrittr)
+#library(magrittr)
 
 ```
 
@@ -44,14 +44,15 @@ rownames(C13)
 colData(C13)
 C13$group
 
-C13 %>% subset.TracerExperiment(group == "A")
-C13groups <- split.TracerExperiment(C13, by = ~ group)
+C13 %>% subset(group == "A")
+C13groups <- split(C13, by = ~ group)
 C13 <- with(C13groups, A + B)
 
 metData(C13)
 isoData(C13)
 
 assay(C13, "raw")
+sumMets(C13, assay = "raw")
 
 ```
 
@@ -63,8 +64,8 @@ A typical analysis workflow may look like as demonstrated below:
 ```{r, message=FALSE, warning=FALSE}
 
 C13 %<>% impute(assay = "raw")
-C13 %<>% correctIso()
-C13 %<>% normalize(method = ~ COLSUM)
+C13 %<>% correctIso(assay = "imp")
+C13 %<>% normalize(method = ~ COLSUM, assay = "corr")
 
 assay(C13, "mid") <- MID(C13)
 assay(C13, "frac", type = "met") <- isoEnrichment(C13)
@@ -72,11 +73,11 @@ assay(C13, "norm", type = "met") <- sumMets(C13)
 
 contrasts <- list(groupBvsA = list("group" = c("B", "A")))
 
-C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", method = "limma", assay = "norm")
-C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", method = "beta", assay = "frac")
-C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "iso", method = "beta", assay = "mid")
+C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", assay = "norm", method = "ttest")
+C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", assay = "frac", method = "beta")
+C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "iso",  assay = "mid", method = "beta")
 
-results(C13, "iso")$beta$groupBvsA %>% head(10)
+results(C13, "iso", "mid", "beta") %>% head(10)
 
 ```
 

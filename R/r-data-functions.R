@@ -392,7 +392,7 @@ MID <- function(TE, assay = "norm", max_na = 0, max_imp = 0.25, remove_imp = TRU
   fractions[is.na(data)] <- NA
   fractions[is.nan(data.matrix(data))] <- NaN
 
-  if (remove_imp == TRUE){
+  if (remove_imp == TRUE & !is.null(TE@qcAssays$na)){
     imp <- as.matrix(TE@qcAssays$na)
     fractions[imp] <- NA
   }

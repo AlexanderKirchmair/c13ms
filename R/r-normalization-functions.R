@@ -17,7 +17,7 @@
 #' @export
 #'
 #' @examples
-normalizeIsoAssay <- function(isoAssay, method = ~ IS + SUM, isodata = NULL, metAssay = NULL, fractions = NULL, colData = NULL, ...){
+normalizeIsoAssay <- function(isoAssay, method = ~ IS + SUM, isodata = NULL, metAssay = NULL, fractions = NULL, colData = NULL, quiet = TRUE, ...){
 
   ### Function for data normalization
   # provide custom functions in ellipsis
@@ -50,18 +50,18 @@ normalizeIsoAssay <- function(isoAssay, method = ~ IS + SUM, isodata = NULL, met
     if (m %in% methods.colData){
 
       # normalization factors from sample data
-      cat("Normalization using", m, "\n")
+      if (!quiet) .colorcat(c("Normalization using", m))
       data <- normColData(data, colData[,m])
 
     } else if (m %in% methods.local){
       # apply locally defined functions
       m <- paste0("norm", m)
-      cat("Normalization using", m, "\n")
+      if (!quiet) .colorcat(c("Normalization using", m))
       data <- do.call(m, c(list("data" = data.matrix(data), "sumdata" = sumdata, "fractions" = fractions, "isodata" = isodata, "coldata" = colData), list(...)))
 
     } else if (m %in% methods.functions){
       # apply user-defined functions
-      cat("Normalization using", m, "\n")
+      if (!quiet) .colorcat(c("Normalization using", m))
       data <- FUNs[[m]](data, FUNargs)
 
     } else {

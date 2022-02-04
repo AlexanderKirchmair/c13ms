@@ -166,7 +166,7 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, at
 
     # low values can be kept/replaced by zero
 
-    resid <- res$results$Residuals
+    resid <- icresults$results$Residuals
     rownames(resid) <- sub(paste0("_", atom),"_m", rownames(resid))
     resid <- resid[rownames(assaydata),]
 
@@ -181,12 +181,12 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, at
     # error relative to isotopologue
     relerror[is.na(relerror)] <- 0
     relerror[!is.finite(data.matrix(relerror))] <- 0
-    relerror[naf(assaydata == 0)] <- NA
-    relerror[naf(res == 0)] <- NA
+    relerror[.naf(assaydata == 0)] <- NA
+    relerror[.naf(res == 0)] <- NA
 
     # error relative to metabolite
-    resid[naf(assaydata == 0)] <- NA
-    resid[naf(res == 0)] <- NA
+    resid[.naf(assaydata == 0)] <- NA
+    resid[.naf(res == 0)] <- NA
     resid$met <- gsub("_m.*$", "", rownames(resid))
     sumdata <- resid %>% dplyr::group_by(met) %>% dplyr::summarise(dplyr::across(.fns = sum, na.rm = TRUE))
     sumdata <- as.data.frame(sumdata[match(resid$met, sumdata$met),])
@@ -196,7 +196,7 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, at
     resid_rel_total <- resid / sumdata
 
     if (is.null(tol_error)) tol_error <- NA
-    if (!is.na(tol_error)) res[naf(abs(relerror) > tol_error) & naf(abs(resid_rel_total) > tol_error)] <- NA
+    if (!is.na(tol_error)) res[.naf(abs(relerror) > tol_error) & .naf(abs(resid_rel_total) > tol_error)] <- NA
 
     res <- lapply(setNames(colnames(assaydata), colnames(assaydata)), function(tmp){
       if (!is.null(res[[tmp]])){ res[[tmp]] } else { rep(NA, nrow(res))}

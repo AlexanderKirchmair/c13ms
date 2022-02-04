@@ -11,6 +11,7 @@ normalizeIsoAssay(
   metAssay = NULL,
   fractions = NULL,
   colData = NULL,
+  quiet = TRUE,
   ...
 )
 }

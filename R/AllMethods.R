@@ -399,14 +399,14 @@ split.TracerExperiment <- function(x, ...){
 }
 
 
-setMethod(f = "split", signature = "TracerExperiment", definition = function(x, ...){
-
-  split.TracerExperiment(x, ...)
-
+setMethod(f = "split", signature = "TracerExperiment", definition = function(object, ...){
+  split.TracerExperiment(object, ...)
 })
 
 
-
+setMethod(f = "split", signature = "ANY", definition = function(object, ...){
+  base::split(x = object, ...)
+})
 
 
 

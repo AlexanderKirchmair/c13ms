@@ -28,6 +28,7 @@ setGeneric(name = "isoData<-", def = function(object, ...){ standardGeneric("iso
 #' @export
 setGeneric(name = "impute", def = function(object, ...){ standardGeneric("impute")} )
 
-
+#' @export
+setGeneric(name = "split", def = function(object, ...){ standardGeneric("split")} )
 
 

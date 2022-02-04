@@ -53,7 +53,7 @@ use_package("limma", type = "Suggests")
 use_package("nlme", type = "Suggests")
 use_package("missForest", type = "Suggests")
 use_package("betareg", type = "Suggests")
-use_package("contrasts", type = "Suggests")
+use_package("contrast", type = "Suggests")
 
 
 ```
@@ -82,28 +82,6 @@ use_r("r-isocorrection-functions")
 
 
 ```
-
-
-
-```{r}
-
-# contrasts <- list("TSCMvsTN_cells" = list("Celltype" = c("TSCM", "TN"), "Sampletype" = "cells", "Tracer" = "13C"),
-#                   "TCMvsTN_cells" = list("Celltype" = c("TCM", "TN"), "Sampletype" = "cells", "Tracer" = "13C"),
-#                   "TEMvsTN_cells" = list("Celltype" = c("TEM", "TN"), "Sampletype" = "cells", "Tracer" = "13C"))
-# 
-# C13 <- readRDS("../../projects/CD8/data/metabolomics/differentiation/C13.rds")
-# 
-
-```
-
-
-
-
-
-
-
-
-
 
 
 ```{r}
