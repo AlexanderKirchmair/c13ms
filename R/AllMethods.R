@@ -302,27 +302,48 @@ setMethod(f = "$", signature = "TracerExperiment", definition = function(x, name
 #' @export
 #'
 #' @examples
-subset.TracerExperiment <- function(x, factor, ...){
+subset.TracerExperiment <- function(x, factor, type = "col", ...){
 
   args <- rlang::enquo(factor)
-  subres <- dplyr::filter(colData(x), !!args)
-  subsamples <- rownames(subres)
 
-  subiso <- lapply(x@isoAssays, function(tmp) tmp[,subsamples, drop=FALSE])
-  submet <- lapply(x@metAssays, function(tmp) tmp[,subsamples, drop=FALSE])
-  subqc <- lapply(x@qcAssays, function(tmp) tmp[,subsamples, drop=FALSE])
+  subsamples <- colnames(x)
+  isodf <- isoData(x)
+  metdf <- metData(x)
+
+  if (type == "col"){
+    # subset based on colData
+    subres <- dplyr::filter(colData(x), !!args)
+    subsamples <- rownames(subres)
+
+  } else if (type == "met"){
+    # subset based on metData
+    metdf <- dplyr::filter(metdf, !!args)
+    isodf <- isodf[isodf$metabolite %in% rownames(metdf),, drop = FALSE]
+
+  } else if (type == "iso"){
+    # subset based on isoData
+    isodf <- dplyr::filter(isodf, !!args)
+    metdf <- metdf[rownames(metdf) %in% isodf$metabolite,, drop = FALSE]
+
+  }
+
+  mets <- rownames(metdf)
+  isos <- rownames(isodf)
+
+  subiso <- lapply(x@isoAssays, function(tmp) tmp[isos, subsamples, drop=FALSE])
+  submet <- lapply(x@metAssays, function(tmp) tmp[mets, subsamples, drop=FALSE])
+  subqc <- lapply(x@qcAssays, function(tmp) tmp[isos, subsamples, drop=FALSE])
 
   subTE <- TracerExperiment(meta = x@meta,
-                            metData = x@metData,
+                            metData = x@metData[mets,, drop = FALSE],
                             colData = x@colData[subsamples,,drop=FALSE],
-                            isoData = x@isoData,
+                            isoData = x@isoData[isos,, drop = FALSE],
                             isoAssays = subiso,
                             qcAssays = subqc,
                             metAssays = submet)
 
+
   subTE
-
-
 }
 
 
