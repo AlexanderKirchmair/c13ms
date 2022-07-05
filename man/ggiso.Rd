@@ -9,9 +9,6 @@ ggiso(mid, isodata, label = TRUE, cumulative = FALSE, ...)
 \arguments{
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Isotopologue plotting
 }

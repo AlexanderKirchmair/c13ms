@@ -22,9 +22,6 @@ isoCorr(
 \arguments{
 \item{allresults}{}
 }
-\value{
-
-}
 \description{
 Wrapper function for IsoCorrector
 }

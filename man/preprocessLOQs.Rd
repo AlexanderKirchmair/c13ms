@@ -16,9 +16,6 @@ preprocessLOQs(
 \arguments{
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Preprocessing based on LOD/LOQ estimates
 }

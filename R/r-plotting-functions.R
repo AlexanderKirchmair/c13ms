@@ -223,7 +223,7 @@ isoplot <- function(TE, mets = NULL, summarise_by = NULL, dir = NULL, filename =
     mids <- lapply(mids, function(mid){
       df <- data.frame(t(mid))
       df$rep <- coldata[rownames(df),, drop = TRUE]
-      mid <- sumAssay(df, var = rep, FUN = mean, na.rm = TRUE)
+      mid <- .sumAssay(df, var = rep, FUN = mean, na.rm = TRUE)
       data.frame(t(mid))
     })
 
@@ -231,7 +231,7 @@ isoplot <- function(TE, mets = NULL, summarise_by = NULL, dir = NULL, filename =
 
   order_by <- rlang::enquo(order_by)
   if (!rlang::quo_is_null(order_by)){
-    order <- colData(TE) %>% arrange(!!order_by) %>% rownames()
+    order <- colData(TE) %>% dplyr::arrange(!!order_by) %>% rownames()
     mids <- lapply(mids, function(mid){ mid[,order, drop = FALSE] })
   }
 
@@ -395,7 +395,7 @@ ggcircles <- function(data, mapping = aes(x = x, y = y, fill = value), sym = TRU
 
   gg <- ggplot2::ggplot(data = data, mapping = aes1) +
     theme_circles(base_size = fontsize) +
-    ggforce::geom_circle(aes2, inherit.aes = FALSE)
+    ggforce::geom_circle(aes2, inherit.aes = FALSE, ...)
 
   gg %<>% + ggplot2::scale_x_continuous(breaks = xbreaks,
                                         expand = ggplot2::expansion(mult = c(0,0)),

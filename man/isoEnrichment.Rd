@@ -17,9 +17,6 @@ isoEnrichment(
 \arguments{
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Fractional enrichment
 }

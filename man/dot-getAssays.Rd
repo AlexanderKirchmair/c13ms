@@ -17,9 +17,6 @@
 \arguments{
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Function to get default assay
 }

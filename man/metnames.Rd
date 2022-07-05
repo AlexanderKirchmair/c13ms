@@ -9,9 +9,6 @@ metnames(x, ...)
 \arguments{
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Metabolite names
 }

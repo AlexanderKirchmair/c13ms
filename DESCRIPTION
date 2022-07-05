@@ -4,7 +4,7 @@ Title: C13 GC/LC-MS Metabolomics Data Analysis
 Version: 0.1.0
 Author: person("Alexander", "Kirchmair", email="alex.kirchmair@gmail.com", role = c("aut","cre")),
 Maintainer: Alexander Kirchmair <alex.kirchmair@gmail.com>
-Description:  Analysis of isotope-labelled metabolomics data
+Description: Analysis of isotope-labelled metabolomics data
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -18,7 +18,7 @@ Imports:
     methods,
     rlang,
     SummarizedExperiment
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.0
 Suggests: 
     limma,
     glmmTMB,
@@ -39,4 +39,5 @@ Collate:
     'r-normalization-functions.R'
     'r-plotting-functions.R'
     'r-preprocessing-functions.R'
+    'r-testing-functions.R'
     'utils-pipe.R'

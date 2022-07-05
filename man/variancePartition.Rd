@@ -9,9 +9,6 @@ variancePartition(data, design, formula = NULL, rm.na = FALSE)
 \arguments{
 \item{rm.na}{}
 }
-\value{
-
-}
 \description{
 variancePartition
 }

@@ -9,9 +9,6 @@
 \arguments{
 \item{mat}{}
 }
-\value{
-
-}
 \description{
 Simple pivot_longer wrapper for numeric matrices
 }

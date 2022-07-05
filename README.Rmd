@@ -14,24 +14,31 @@ knitr::opts_chunk$set(
 )
 ```
 
-# c13ms
+# c13ms: Analysis of 13C-labelled metabolomics data
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-Analysis of isotope-labelled metabolomics data
+This is an R package for the statistical and functional analysis of 13C-labelling data.
 
 
 ```{r, include = FALSE}
 
 library(c13ms)
-#library(magrittr)
 
 ```
 
+## Installation
 
+``` r
+devtools::install_github("AlexanderKirchmair/c13ms")
+```
 
 ## Introduction
+
+Isotopologue abundances are required as a main input. The workflow is centered around the 'TracerExperiment' class object, which acts as an integrative storage of isotopologue abundances, isotopologue and metabolite annotations, sample annotations and other metadata.
+
+Here are some basic functionalities:
 
 ```{r, results='hide', message=FALSE, warning=FALSE}
 
@@ -59,17 +66,31 @@ sumMets(C13, assay = "raw")
 
 ## Workflow
 
-A typical analysis workflow may look like as demonstrated below:
+A typical analysis workflow may look like as demonstrated below.
 
-```{r, message=FALSE, warning=FALSE}
+
+Pre-processing (imputation, natural isotope abundance correction, normalization, ...): 
+```{r, results='hide', message=FALSE, warning=FALSE}
 
 C13 %<>% impute(assay = "raw")
 C13 %<>% correctIso(assay = "imp")
 C13 %<>% normalize(method = ~ COLSUM, assay = "corr")
 
+```
+
+
+Calculation of relative mass isotopomer distributions (MID), fractional enrichment and summarization of isotopologues to metabolite levels:
+```{r, results='hide', message=FALSE, warning=FALSE}
+
 assay(C13, "mid") <- MID(C13)
 assay(C13, "frac", type = "met") <- isoEnrichment(C13)
 assay(C13, "norm", type = "met") <- sumMets(C13)
+
+```
+
+
+Statistical testing for differences in abundances and labelling:
+```{r, results='hide', message=FALSE, warning=FALSE}
 
 contrasts <- list(groupBvsA = list("group" = c("B", "A")))
 
@@ -82,11 +103,12 @@ results(C13, "iso", "mid", "beta") %>% head(10)
 ```
 
 
+
 ## Visualization
 
 ```{r}
 
-isoplot(C13, mets = metnames(C13)[1])
+isoplot(C13, mets = metnames(C13)[1], title = metnames(C13)[1], cumulative = TRUE)
 
 ```
 

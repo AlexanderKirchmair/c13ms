@@ -9,9 +9,6 @@ MID(TE, assay = "norm", max_na = 0, max_imp = 0.25, remove_imp = TRUE, ...)
 \arguments{
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Mass isotopomer distribution (MID)
 }

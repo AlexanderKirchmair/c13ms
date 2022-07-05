@@ -6,9 +6,6 @@
 \usage{
 \S4method{colData}{TracerExperiment}(x, ...)
 }
-\value{
-
-}
 \description{
 colData
 }

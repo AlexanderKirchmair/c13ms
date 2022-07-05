@@ -21,13 +21,13 @@
 #' @export
 #'
 #' @examples
-diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "iso", assay = "norm", assay_ref = "clean", logged = FALSE, p.adj.method = "holm", conf = TRUE, ...){
+diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "iso", assay = "norm", assay_ref = "clean", logged = FALSE, p.adj.method = "fdr", conf = TRUE, ...){
 
 
   ### Input ----
 
   design <- TE@colData
-  data <- .getAssays(TE, assay = assay, type = type)
+  data <- c13ms:::.getAssays(TE, assay = assay, type = type)
 
 
   ### Call method functions ----
@@ -211,7 +211,7 @@ getSubsets <- function(contrasts){
 
 
 
-testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, var.equal = FALSE, p.adj.method = "holm", paired = FALSE,  ...){
+testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, var.equal = FALSE, p.adj.method = "fdr", paired = FALSE,  ...){
 
   if (paired == TRUE) message("Warning: Paired t-test requires matching non-NA samples .")
   if (paired == TRUE & !is.null(formula))  paired <- labels(terms(formula))
@@ -277,7 +277,7 @@ testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, v
 
 # testLM(data = C13@metAssays$frac, design = C13@colData, formula = ~ Celltype + Donor, contrasts = contrasts)
 # add missing log-transform...
-testLM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "holm", ...){
+testLM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "fdr", ...){
 
   stopifnot(requireNamespace("contrast", quietly = TRUE))
 
@@ -365,7 +365,7 @@ testLM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.metho
 
 
 
-testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "holm", ...){
+testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "fdr", ...){
 
   stopifnot(requireNamespace("limma", quietly = TRUE))
 
@@ -432,13 +432,7 @@ testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
 
 
 
-
-
-
-
-
-
-testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FALSE, p.adj.method = "holm", ...){
+testLMM3 <- function(data, design, formula, contrasts, random = NULL, log = FALSE, p.adj.method = "fdr", ...){
 
   stopifnot(requireNamespace("nlme", quietly = TRUE))
   stopifnot(requireNamespace("multcomp", quietly = TRUE))
@@ -448,80 +442,135 @@ testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FA
   data <- as.data.frame(t(data))
   data[is.na(data)] <- NA
 
-  form.fixed <- update(formula, conc ~ .)
+  if (log == TRUE){ data <- log2(data) }
 
-  levels <- lapply(contrasts, function(tmp) setNames(paste0(tmp[[1]][1], " - ", tmp[[1]][2], " = 0"), names(tmp)[1]))
-
-  class <- labels(terms(formula))
-  class <- gsub(".*\\(|\\).*", "", class)
-  classes <- apply(sapply(class, function(tmp) as.character(design[[tmp]]) ), 1, paste, collapse = "")
-
-  contr.names <- apply(sapply(contrasts, "[[", 1), 2, paste, collapse = " - ")
-
-  nadf <- data.frame(row.names = names(contrasts))
-  nadf$est <- NA
-  nadf$pval <- NA
+  form.fixed <- update(formula, conc ~ 0 + .)
 
 
-  res <- lapply(data, function(conc){
+  subsets <- getSubsets(contrasts)
 
-    data.lme <- data.frame("conc" = as.numeric(conc), "classes" = classes, design[rownames(data), class, drop = FALSE])
-    data.lme <- droplevels(na.omit(data.lme))
+  results <- lapply(subsets, function(tmpcontrasts){
 
-    if (nrow(data.lme) < 2) return(nadf)
+    subset_data <- getDataSubset(data, design, contrast = tmpcontrasts)
 
-    ix <- sapply(class, function(tmp){
-      data.lme[,tmp] %in% names(table(data.lme[,tmp]))[table(data.lme[,tmp]) > 1]
+    levels <- lapply(tmpcontrasts, function(tmp) setNames(paste0(tmp[[1]][1], " - ", tmp[[1]][2], " = 0"), names(tmp)[1]))
+
+    class <- labels(terms(formula))
+    class_rand <- setdiff(trimws(unlist(strsplit(labels(terms(random)), split = "\\|"))), "1")
+    class <- gsub(".*\\(|\\).*", "", class)
+    classes <- apply(sapply(class, function(tmp) as.character(design[rownames(subset_data),][[tmp]]) ), 1, paste, collapse = "")
+
+    contr.names <- apply(sapply(tmpcontrasts, "[[", 1), 2, paste, collapse = " - ")
+
+    nadf <- data.frame(row.names = names(tmpcontrasts))
+    nadf$diff <- NA_real_
+    nadf$pval <- NA_real_
+    nadf$lfc <- NA_real_
+    nadf$lfc.mean <- NA_real_
+    nadf <- as.matrix(nadf)
+
+    res <- lapply(subset_data, function(conc){
+
+      data.lme <- data.frame("conc" = as.numeric(conc), "classes" = classes, design[rownames(subset_data), union(class, class_rand), drop = FALSE])
+      data.lme <- droplevels(na.omit(data.lme))
+
+      if (nrow(data.lme) < 2) return(nadf)
+
+      ix <- sapply(class, function(tmp){
+        data.lme[,tmp] %in% names(table(data.lme[,tmp]))[table(data.lme[,tmp]) > 1]
+      })
+      ix <- apply(ix, 1, function(tmp) Reduce("&", tmp))
+      data.lme <- droplevels(data.lme[ix,])
+
+
+      tmpcontrasts2 <- lapply(tmpcontrasts, function(x) x[sapply(x, length) == 2])
+      tmplevels <- levels[sapply(tmpcontrasts2, function(tmp) sapply(names(tmp), function(col) all(tmp[[col]] %in% data.lme[[col]]) ) )]
+      if (length(tmplevels) == 0) return(nadf)
+      lmecontrasts <- lapply(tmplevels, function(tmp) setNames(list(tmp), names(tmp)) )
+      lmecontrasts <- unlist(unlist(lmecontrasts, recursive = FALSE, use.names = FALSE))
+      if (length(lmecontrasts) == 1){
+        lmecontrasts <- as.list(lmecontrasts)
+      } else {
+        lmecontrasts <- as.list(unstack(stack(lmecontrasts)))
+      }
+
+
+      if (all(data.lme$conc == 0) | any(table(data.lme[,class]) < 2 )) return(nadf)
+
+      # fit
+
+      if (length(lmecontrasts) == 0) return(nadf)
+
+      lmetest <- FALSE
+
+      tryCatch({
+        suppressMessages({
+        lmefit <- nlme::lme(fixed = form.fixed, random = random, data = data.lme,
+                            control = nlme::lmeControl(maxIter = 1000,
+                                                       msMaxEval = 1000,
+                                                       msMaxIter = 1000,
+                                                       niterEM = 2000,
+                                                       returnObject = TRUE))
+        lmetest <- multcomp::glht(lmefit, linfct = do.call(multcomp::mcp, lmecontrasts))
+        })
+      },
+        error = function(x){
+          message("Warning: Error in model!")
+          return(lmetest)})
+
+      if (is.logical(lmetest)) return(nadf)
+
+
+      # tests
+      conc.res <- summary(lmetest, test = multcomp::adjusted("none"))
+      dfres <- data.frame("diff" = conc.res$test$coefficients,
+                          "pval" = conc.res$test$pvalues)
+
+      # print(lmecontrasts)
+      cmat <- lapply(lmecontrasts[[1]], function(x) trimws(strsplit(gsub("=.*", "", x), split = " - ")[[1]]) )
+      # lapply(lmecontrasts, function(x) sapply(x, function(xx) trimws(strsplit(gsub("=.*", "", xx), split = " - ")[[1]]) ))
+      # print(cmat)
+      cmat <- sapply(seq_along(cmat), function(i) paste0(names(cmat)[i], cmat[[i]]) )
+      # print(cmat)
+
+      lfcs <- log2(lmefit$coefficients$fixed[cmat[1,]] / lmefit$coefficients$fixed[cmat[2,]])
+      dfres$lfc <- as.numeric(lfcs)
+
+      means <- dplyr::group_by(.data = data.lme, classes) %>% dplyr::summarise(mean = mean(conc)) %>% dplyr::pull(mean, name = classes)
+      cmat <- sapply(lmecontrasts[[1]], function(x) trimws(strsplit(gsub("=.*", "", x), split = " - ")[[1]]) )
+      lfcs.means <- log2(means[cmat[1,]] / means[cmat[2,]])
+      dfres$lfc.mean <- as.numeric(lfcs.means)
+
+      rownames(dfres) <- names(contr.names)[match(rownames(dfres), contr.names)]
+      dfres <- dfres[names(contr.names),]
+      rownames(dfres) <- names(contr.names)
+      as.matrix(dfres)
+
+
     })
-    ix <- apply(ix, 1, function(tmp) Reduce("&", tmp))
-    data.lme <- droplevels(data.lme[ix,])
-
-    tmplevels <- levels[sapply(contrasts, function(tmp) sapply(names(tmp), function(col) all(tmp[[col]] %in% data.lme[[col]]) ) )]
-    if (length(tmplevels) == 0) return(nadf)
-    lmecontrasts <- lapply(tmplevels, function(tmp) setNames(list(tmp), names(tmp)) )
-    lmecontrasts <- unlist(unlist(lmecontrasts, recursive = FALSE, use.names = FALSE))
-    if (length(lmecontrasts) == 1){
-      lmecontrasts <- as.list(lmecontrasts)
-    } else {
-      lmecontrasts <- as.list(unstack(stack(lmecontrasts)))
-    }
 
 
-    if (all(data.lme$conc == 0) | any(sapply(data.lme[,class], function(tmp) length(unique(tmp)) < 2 ))) return(nadf)
 
-    # fit
-    lmefit <- nlme::lme(fixed = form.fixed, random = random, data = data.lme, control = nlme::lmeControl(maxIter = 100, returnObject = TRUE))
+    res <- lapply(setNames(names(tmpcontrasts), names(tmpcontrasts)), function(tmp){
+      t(sapply(res, function(x){ x[tmp,] }))
+    })
 
-    if (length(lmecontrasts) == 0) return(nadf)
+    res
 
-    # tests
-    lmetest <- multcomp::glht(lmefit, linfct = do.call(multcomp::mcp, lmecontrasts))
-    conc.res <- summary(lmetest, test = multcomp::adjusted("none"))
-    dfres <- data.frame("est" = conc.res$test$coefficients, "pval" = conc.res$test$pvalues)
-    rownames(dfres) <- names(contr.names)[match(rownames(dfres), contr.names)]
-    dfres <- dfres[names(contr.names),]
-    rownames(dfres) <- names(contr.names)
-    dfres
 
   })
 
 
-  if (logged == FALSE) cols <- c("diff", "pval") else cols <- c("lfc", "pval")
-
-  results <- lapply(seq(contrasts), function(i){
-    tmpres <- t(sapply(res, function(tmp) as.numeric(tmp[i,]) ))
-    colnames(tmpres) <-  cols
-    data.frame(tmpres)
-  })
+  results <- unlist(setNames(results, NULL), recursive = FALSE)
 
   results <- lapply(results, function(tmp){
+    tmp <- as.data.frame(tmp)
     tmp$padj <- p.adjust(tmp$pval, method = p.adj.method)
     tmp
   })
 
-  names(results) <- names(contrasts)
-  return(results)
-}
+  results
+  }
 
 
 
@@ -532,16 +581,7 @@ testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FA
 
 
 
-
-
-
-
-
-
-
-
-
-testDREAM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "holm", ...){
+testDREAM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "fdr", ...){
 
   stopifnot(requireNamespace("variancePartition", quietly = TRUE))
 
@@ -621,7 +661,7 @@ testDREAM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
 
 
 
-testBETAREG <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "holm", ...){
+testBETAREG <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "fdr", ...){
 
   stopifnot(requireNamespace("betareg", quietly = TRUE))
   stopifnot(requireNamespace("multcomp", quietly = TRUE))
@@ -712,7 +752,7 @@ testBETAREG <- function(data, design, formula, contrasts, logged = FALSE, p.adj.
 
 
 
-testBETA <- function(data, design, formula, contrasts, zotrans = NULL, logged = FALSE, p.adj.method = "holm", verbose = FALSE, ...){
+testBETA <- function(data, design, formula, contrasts, zotrans = NULL, logged = FALSE, p.adj.method = "fdr", verbose = FALSE, ...){
 
   stopifnot(requireNamespace("glmmTMB", quietly = TRUE))
   stopifnot(requireNamespace("multcomp", quietly = TRUE))

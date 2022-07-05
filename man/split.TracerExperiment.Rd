@@ -9,9 +9,6 @@ split.TracerExperiment(x, ...)
 \arguments{
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Split TE
 }

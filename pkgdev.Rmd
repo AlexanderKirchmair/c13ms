@@ -22,11 +22,6 @@ use_pipe()
 
 
 
-
-
-
-https://r-pkgs.org/man.html#man-classes
-
 ```{r}
 
 library("SummarizedExperiment")
@@ -61,8 +56,6 @@ use_package("contrast", type = "Suggests")
 
 
 
-
-
 R functions
 ```{r}
 
@@ -78,12 +71,13 @@ use_r("r-imputation-functions")
 use_r("r-difftest-functions")
 use_r("r-plotting-functions")
 use_r("r-isocorrection-functions")
-
+use_r("r-testing-functions")
 
 
 ```
 
 
+Element data
 ```{r}
 
 isocomp <- getElementCompositions()

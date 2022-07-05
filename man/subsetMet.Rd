@@ -9,9 +9,6 @@ subsetMet(data, met = NULL, isodata = NULL)
 \arguments{
 \item{isodata}{}
 }
-\value{
-
-}
 \description{
 Subset isotobologue data by metabolites
 }

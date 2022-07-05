@@ -9,9 +9,6 @@
 \arguments{
 \item{pattern}{}
 }
-\value{
-
-}
 \description{
 Order isotopologue labels numerically
 }

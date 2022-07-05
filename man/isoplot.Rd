@@ -18,9 +18,6 @@ isoplot(
 \arguments{
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Isotopologue plotting
 }

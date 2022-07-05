@@ -13,16 +13,13 @@ diffTest(
   assay = "norm",
   assay_ref = "clean",
   logged = FALSE,
-  p.adj.method = "holm",
+  p.adj.method = "fdr",
   conf = TRUE,
   ...
 )
 }
 \arguments{
 \item{...}{}
-}
-\value{
-
 }
 \description{
 Differential abundance testing of isotope labelling data

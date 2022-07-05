@@ -18,9 +18,6 @@ makeTracerExperiment(
 \arguments{
 \item{assay}{}
 }
-\value{
-
-}
 \description{
 Make new TracerExperiment
 }

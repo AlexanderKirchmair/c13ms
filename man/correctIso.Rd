@@ -9,9 +9,6 @@ correctIso(TE, assay = "imp", ...)
 \arguments{
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Natural isotope abundance correction
 }

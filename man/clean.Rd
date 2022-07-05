@@ -18,9 +18,6 @@ clean(
 \arguments{
 \item{maxNAfrac_per_group}{}
 }
-\value{
-
-}
 \description{
 Cleaning of data
 }

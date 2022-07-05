@@ -18,9 +18,6 @@ normalizeIsoAssay(
 \arguments{
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Normalization of isotopologue abundance data
 }

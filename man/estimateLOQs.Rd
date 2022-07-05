@@ -17,9 +17,6 @@ estimateLOQs(
 \arguments{
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Estimate LOD/LOQ values from QC samples
 }

@@ -9,9 +9,6 @@ ggrle(data, topN = 10, title = NULL, cluster = TRUE)
 \arguments{
 \item{cluster}{}
 }
-\value{
-
-}
 \description{
 RLE plots
 }

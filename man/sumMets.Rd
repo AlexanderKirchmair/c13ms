@@ -9,9 +9,6 @@ sumMets(TE, assay = "norm", max_na = 0.1, max_imp = 0.25, ...)
 \arguments{
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Summarize isotopologues to metabolites
 }
