@@ -13,10 +13,12 @@ exampleTracerExperiment <- function(nsamples = 10, nmets = 10, seed = 123){
 
   set.seed(seed)
   samples <- c(paste0(rep("A", floor(nsamples/2)), 1:floor(nsamples/2)), paste0(rep("B", ceiling(nsamples/2)), 1:ceiling(nsamples/2)))
-  mets <- replicate(nmets, paste(sample(letters, sample(2:5, 1)), collapse = ""))
+  mets <- replicate(nmets, paste(sample(letters, sample(3:5, 1)), collapse = ""))
+  mets[duplicated(mets)] <- paste0(mets[duplicated(mets)], 1:sum(duplicated(mets)))
   formulas <- replicate(nmets, rmolecule())
+  stopifnot(sum(grepl("O0", formulas)) == 0)
 
-  metData <- data.frame(row.names = mets, Molecule = gsub("1", "", formulas), MSion = NA)
+  metData <- data.frame(row.names = mets, Molecule = formulas, MSion = NA)
   colData <- data.frame(row.names = samples, name = samples, group = sub("\\d", "", samples))
 
   nC <- as.numeric(sub("C", "", regmatches(formulas, regexpr("C[0-9]+", formulas))))
@@ -74,6 +76,7 @@ rmolecule <- function(n = NULL, ...){
 
   v <- setNames(as.character(v), names(v))
   v[v == "1"] <- ""
+  v <- v[v != "0"]
   mol <- paste(paste0(names(v), v), collapse = "")
 
   mol

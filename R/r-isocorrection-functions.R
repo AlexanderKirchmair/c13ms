@@ -34,7 +34,7 @@ correctIso <- function(TE, assay = "imp", ...){
 #' @param molecules
 #' @param Molecule
 #' @param MSion
-#' @param atom
+#' @param tracer
 #' @param tracer_purity
 #' @param mode
 #' @param tol_error
@@ -46,7 +46,7 @@ correctIso <- function(TE, assay = "imp", ...){
 #' @export
 #'
 #' @examples
-isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, atom = "C", tracer_purity = NA, mode = "negative", tol_error = 0.05, highres = TRUE, tmpdir = NULL, isocomp = NULL, allresults = FALSE){
+isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, tracer = "C", tracer_purity = NA, mode = "negative", tol_error = 0.05, highres = TRUE, tmpdir = NULL, isocomp = NULL, allresults = FALSE){
 
   stopifnot(requireNamespace("IsoCorrectoR"))
 
@@ -70,7 +70,7 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, at
   ### 1. Measurement file
   message("Preparing measurement file...")
   MeasurementFile <- file.path(tmpdir, "MeasurementFile.csv")
-  measurement <- data.frame("Measurements/Samples" = gsub(pattern = "_m", replacement = paste0("_", atom), x = rownames(assaydata)),
+  measurement <- data.frame("Measurements/Samples" = gsub(pattern = "_m", replacement = paste0("_", tracer), x = rownames(assaydata)),
                             assaydata, check.names = FALSE)
   write.csv(measurement, file = MeasurementFile, row.names = FALSE, na = "")
 
@@ -78,62 +78,15 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, at
   ### 2. Molecule file
   message("Preparing molecule file...")
   MoleculeFile <- file.path(tmpdir, "MoleculeFile.csv")
-
-  df <- data.frame("Molecule" = rownames(molecules),
-                   "MS ion or MS/MS product ion" = dplyr::pull(.data = molecules, !!MSion),
-                   "MS/MS neutral loss" = "", stringsAsFactors = FALSE, check.names = FALSE)
-
-
-  # For molecules without ions, automatically derive ion
-  chargeH <- ifelse(mode == "negative", -1, 1)
-  msions <- sapply(molecules[[rlang::as_name(Molecule)]], FUN = function(X){
-    if (!is.na(X)){
-      X <- .add1(X)
-      Hmol <- regmatches(X, regexpr("H[0-9]+", X))
-      nH <- as.numeric(sub("H","", Hmol))
-      Hion <- paste("H", nH + chargeH, sep = "")
-      x <- sub(pattern = Hmol, replacement = Hion, x = X )
-      gsub("H0", "", x)
-    } else {
-      NA
-    }
-  })
-  df[[2]][is.na(df[[2]])] <- msions[is.na(df[[2]])]
-
-  # Put formulas into correct format
-  df[[2]] <- sapply(df[[2]], .add1)
-  traceratoms <- regmatches(df[[2]], regexpr(paste0(atom, "[0-9]+"), df[[2]]))
-  df[[2]] <- paste(df[[2]], paste("Lab", traceratoms, sep = ""), sep = "")
-
-  write.csv(df, file = MoleculeFile, row.names = FALSE, quote = FALSE)
-
-
+  MolTable <- .makeMoleculeTable(molecules = molecules, Molecule = Molecule, MSion = MSion, mode = mode, tracer = tracer)
+  write.csv(MolTable, file = MoleculeFile, row.names = FALSE, quote = FALSE)
 
   ### 3. Element file
   message("Preparing element file...")
   ElementFile <- file.path(tmpdir, "ElementFile.csv")
-
-  all_elements <- unique(sub(unlist(strsplit(df[[2]], split = "[0-9]+")), pattern = "Lab", replacement = ""))
-  elements <- data.frame(row.names = all_elements, matrix(nrow = length(all_elements), ncol = 4))
-  colnames(elements) <- c("Element", "Isotope abundance_Mass shift", "Tracer isotope mass shift", "Tracer purity")
-  elements$Element <- all_elements
-
-  if (is.null(isocomp)) isocomp <- .getElementCompositions()
-
-  elements$`Isotope abundance_Mass shift` <- sapply(isocomp[elements$Element], function(tmp){
-    tmp_use <- tmp[tmp$`Isotopic Composition` > 0,]
-    ref <- which(tmp_use$`Isotopic Composition` == max(tmp_use$`Isotopic Composition`))
-    tmp_use$shift <- tmp_use$`Mass Number` - tmp_use$`Mass Number`[ref]
-    paste(paste(format(tmp_use$`Isotopic Composition`, scientific = FALSE), tmp_use$shift, sep = "_"), collapse = "/")
-  })
-
-  elements$`Tracer isotope mass shift` <- ifelse(elements$Element == atom, "1", "") # only high-res?
-  elements$`Tracer purity` <- ifelse(elements$Element == atom, tracer_purity, "") #
-
-  elements.write <- c(paste(colnames(elements), collapse = ","),
-                      gsub(",,", "", apply(elements, 1, function(tmp){paste(tmp, collapse = ",")})))
-  write.table(elements.write, file = ElementFile, sep = ",", row.names = FALSE, quote = FALSE, col.names = FALSE)
-
+  if (is.null(isocomp)) isocomp <- getElementCompositions()
+  ElemTable <- .makeElementsTable(df = MolTable, isocomp = isocomp, tracer = tracer, tracer_purity = tracer_purity)
+  write.table(ElemTable, file = ElementFile, sep = ",", row.names = FALSE, quote = FALSE, col.names = FALSE)
 
 
   ### Run IsoCorrectoR ----
@@ -167,15 +120,15 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, at
     # low values can be kept/replaced by zero
 
     resid <- icresults$results$Residuals
-    rownames(resid) <- sub(paste0("_", atom),"_m", rownames(resid))
+    rownames(resid) <- sub(paste0("_", tracer),"_m", rownames(resid))
     resid <- resid[rownames(assaydata),]
 
     res <- icresults$results$Corrected
-    rownames(res) <- sub(paste0("_", atom),"_m", rownames(res))
+    rownames(res) <- sub(paste0("_", tracer),"_m", rownames(res))
     res <- res[rownames(assaydata),]
 
     relerror <- icresults$results$RelativeResiduals
-    rownames(relerror) <- sub(paste0("_", atom),"_m", rownames(relerror))
+    rownames(relerror) <- sub(paste0("_", tracer),"_m", rownames(relerror))
     relerror <- relerror[rownames(assaydata),]
 
     # error relative to isotopologue
@@ -216,15 +169,93 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, at
 
 
 
+#' Internal function to generate molecule table for IsoCorrector
+#'
+#' @param molecules
+#' @param Molecule
+#' @param MSion
+#' @param mode
+#' @param tracer
+#'
+#' @return
+#'
+#' @examples
+.makeMoleculeTable <- function(molecules, Molecule, MSion, mode, tracer){
+
+  df <- data.frame("Molecule" = rownames(molecules),
+                   "MS ion or MS/MS product ion" = dplyr::pull(.data = molecules, !!MSion),
+                   "MS/MS neutral loss" = "", stringsAsFactors = FALSE, check.names = FALSE)
+
+  # For molecules without ions, automatically derive ion
+  chargeH <- ifelse(mode == "negative", -1, 1)
+  msions <- sapply(molecules[[rlang::as_name(Molecule)]], FUN = function(X){
+    if (!is.na(X)){
+      X <- .add1(X)
+      Hmol <- regmatches(X, regexpr("H[0-9]+", X))
+      nH <- as.numeric(sub("H","", Hmol))
+      Hion <- paste("H", nH + chargeH, sep = "")
+      x <- sub(pattern = Hmol, replacement = Hion, x = X )
+      gsub("H0", "", x)
+    } else {
+      NA
+    }
+  })
+  df[[2]][is.na(df[[2]])] <- msions[is.na(df[[2]])]
+
+  # Put formulas into correct format
+  df[[2]] <- sapply(df[[2]], .add1)
+  traceratoms <- regmatches(df[[2]], regexpr(paste0(tracer, "[0-9]+"), df[[2]]))
+  df[[2]] <- paste(df[[2]], paste("Lab", traceratoms, sep = ""), sep = "")
+
+  df
+}
+
+
+
+#' Internal function to generate elements table for IsoCorrector
+#'
+#' @param df
+#' @param isocomp
+#' @param tracer
+#' @param tracer_purity
+#'
+#' @return
+#'
+#' @examples
+.makeElementsTable <- function(df, isocomp, tracer, tracer_purity){
+
+  all_elements <- unique(sub(unlist(strsplit(df[[2]], split = "[0-9]+")), pattern = "Lab", replacement = ""))
+  elements <- data.frame(row.names = all_elements, matrix(nrow = length(all_elements), ncol = 4))
+  colnames(elements) <- c("Element", "Isotope abundance_Mass shift", "Tracer isotope mass shift", "Tracer purity")
+  elements$Element <- all_elements
+
+  elements$`Isotope abundance_Mass shift` <- sapply(isocomp[elements$Element], function(tmp){
+    tmp_use <- tmp[tmp$`Isotopic Composition` > 0,]
+    ref <- which(tmp_use$`Isotopic Composition` == max(tmp_use$`Isotopic Composition`))
+    tmp_use$shift <- tmp_use$`Mass Number` - tmp_use$`Mass Number`[ref]
+    paste(paste(format(tmp_use$`Isotopic Composition`, scientific = FALSE), tmp_use$shift, sep = "_"), collapse = "/")
+  })
+
+  elements$`Tracer isotope mass shift` <- ifelse(elements$Element == tracer, "1", "") # only high-res
+  elements$`Tracer purity` <- ifelse(elements$Element == tracer, tracer_purity, "") #
+
+  elements.write <- c(paste(colnames(elements), collapse = ","),
+                      gsub(",,", "", apply(elements, 1, function(tmp){paste(tmp, collapse = ",")})))
+
+  elements.write
+}
 
 
 
 
 
-
-.getElementCompositions <- function(){
-
-  # Function to retrieve element isotope compositions from NIST
+#' Retrieve element isotope compositions from NIST
+#'
+#' @return
+#' @export
+#'
+#' @examples
+getElementCompositions <- function(){
 
   file <- rvest::read_html(("https://physics.nist.gov/cgi-bin/Compositions/stand_alone.pl?ele=&all=all&ascii=ascii2&isotype=all"))
   rawtable <-  strsplit(x = rvest::html_text(file)[[1]], split = "\n")[[1]]
@@ -264,6 +295,13 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, at
 
 
 
+#' Helper function for formatting molecule formulas for IsoCorrector
+#'
+#' @param tmp
+#'
+#' @return
+#'
+#' @examples
 .add1 <- function(tmp){
   # split string and get elements
   tmp.el <- unlist(strsplit(tmp, "(?<=.)(?=[[:upper:]])", perl = T)) # split at each uppercase letter

@@ -26,7 +26,8 @@ Suggests:
     nlme,
     missForest,
     betareg,
-    contrasts
+    contrasts,
+    testthat (>= 3.0.0)
 Collate: 
     'AllImports.R'
     'AllClasses.R'
@@ -41,3 +42,4 @@ Collate:
     'r-preprocessing-functions.R'
     'r-testing-functions.R'
     'utils-pipe.R'
+Config/testthat/edition: 3

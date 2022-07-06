@@ -103,7 +103,7 @@ document()
 Unit tests
 ```{r}
 
-# lapply(list.files("R/", pattern = ".R"), use_test)
+lapply(list.files("R/", pattern = ".R"), use_test)
 
 ```
 

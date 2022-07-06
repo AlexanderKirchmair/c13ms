@@ -9,7 +9,7 @@ isoCorr(
   molecules,
   Molecule = Molecule,
   MSion = MSion,
-  atom = "C",
+  tracer = "C",
   tracer_purity = NA,
   mode = "negative",
   tol_error = 0.05,
