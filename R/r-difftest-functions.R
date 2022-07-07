@@ -1,26 +1,29 @@
 
 # DIFFERENTIAL ABUNDANCE TESTING FUNCTIONS
 
-# Pre-filtering options (faster, MHT)
-
-
-#' Differential abundance testing of isotope labelling data
+#' Differential abundance testing
 #'
-#' @param TE
-#' @param contrasts
-#' @param formula
+#' Various methods for differential abundance testing of isotope labelling data
+#'
+#' Metabolite and isotopologue abundances (values from 0 to Inf):
+#' Fractional labelling of metabolites and isotopologues (values between 0 and 1):
+#'
+#' @param TE TE object
+#' @param contrasts List of contrasts in the format list(name = c("B", "A"), subclass = "celltype1")
+#' @param formula Formula
 #' @param method
-#' @param type
-#' @param assay
-#' @param logged
+#' @param type "iso" or "met"
+#' @param assay assay name
+#' @param logged are data already log-transformed?
 #' @param p.adj.method
-#' @param conf
+#' @param conf LOQ confidence values
 #' @param ...
 #'
 #' @return
 #' @export
 #'
 #' @examples
+#' exampleTracerExperiment() %>% diffTest(contrasts = list(BvsA = list(group = c("B", "A"))), formula = ~ group, assay = "raw")
 diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "iso", assay = "norm", assay_ref = "clean", logged = FALSE, p.adj.method = "fdr", conf = TRUE, ...){
 
 
@@ -31,8 +34,8 @@ diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "is
 
 
   ### Call method functions ----
-
-  # results: results from each method (i.e. a list for each contrast)
+  # Any function defined as 'test"METHOD"' can be called
+  # Results from each method (i.e. a list for each contrast)
   results <- lapply(setNames(method, method), function(testfun){
     testfun <- paste0("test", toupper(testfun))
     do.call(what = testfun, args = c(list("data" = data,
@@ -107,25 +110,76 @@ diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "is
 
 
 
-
-### METHODS FUNCTIONS --------------------------------
-
-
-# Structure of testfun:
-# testfun <- function(assaydata, sampledata, formula, contrasts, logged = FALSE, ...){
-#
-#   # assaydata: data matrix
-#   # formula: model formula
-#   # contrasts: list of contrasts
-#   # logged: whether data are log-transformed or not
-#
-#
-#   return(results)
-# }
+### HELPER FUNCTIONS --------------------------------
 
 
 
 
+
+#' Internal function to group contrasts that use the same data subset
+#'
+#' @param contrasts
+#'
+#' @return
+#'
+#' @examples
+getSubsets <- function(contrasts){
+
+  all_subsets <- lapply(contrasts, function(tmp){
+    tmp <- tmp[sapply(tmp, length) == 1]
+    unlist(tmp)
+  })
+
+  all_names <- lapply(all_subsets, function(tmp){
+    if (is.null(tmp)){
+      "all"
+    } else {
+      paste0(names(tmp), "==", tmp)
+    }
+  })
+  all_names <- sapply(all_names, paste, collapse = "&")
+
+  split(contrasts, all_names)
+}
+
+
+
+
+#' Internal function to get the data subset for a given contrast
+#'
+#' @param data
+#' @param design
+#' @param contrast
+#'
+#' @return
+#'
+#' @examples
+getDataSubset <- function(data, design, contrast){
+
+  factors <- unlist(lapply(setNames(contrast, NULL), function(tmp) tmp[sapply(tmp, length) == 1]), recursive = FALSE)
+  ixl <- lapply(names(factors), function(fac) design[[fac]] == factors[[fac]])
+  ix <- Reduce('&', ixl)
+
+  if (is.null(ix)) return(data[rownames(design),,drop = FALSE])
+
+  samples <- rownames(design)[ix]
+  data[samples,,drop = FALSE]
+}
+
+
+
+
+
+
+#' Internal function to get the samples/sample names for a given contrast
+#'
+#' @param design
+#' @param contrast
+#' @param paired
+#'
+#' @return
+#'
+#' @examples
 getContrastSamples <- function(design, contrast, paired = NULL){
 
   if (!is.null(paired)){
@@ -135,7 +189,7 @@ getContrastSamples <- function(design, contrast, paired = NULL){
   to_subset <- sapply(contrast, length) == 1
   to_compare <- sapply(contrast, length) == 2
 
-  # use only samples of given type (defines in design)
+  # use only samples of given type (defined in design)
   if (any(to_subset)){
     cols <- names(contrast)[to_subset]
     tmp <- sapply(cols, function(col) design[[col]] %in% contrast[[col]] )
@@ -167,46 +221,23 @@ getContrastSamples <- function(design, contrast, paired = NULL){
 }
 
 
-getContrastSubset <- function(design, contrast){
-  tmp <- contrast[sapply(contrast, length) == 1]
-  rownames(design)[design[[names(tmp)]] %in% tmp]
-}
-
-
-getDataSubset <- function(data, design, contrast){
-
-  factors <- unlist(lapply(setNames(contrast, NULL), function(tmp) tmp[sapply(tmp, length) == 1]), recursive = FALSE)
-  ixl <- lapply(names(factors), function(fac) design[[fac]] == factors[[fac]])
-  ix <- Reduce('&', ixl)
-
-  if (is.null(ix)) return(data[rownames(design),,drop = FALSE])
-
-  samples <- rownames(design)[ix]
-  data[samples,,drop = FALSE]
-}
 
 
 
-getSubsets <- function(contrasts){
-
-  all_subsets <- lapply(contrasts, function(tmp){
-    tmp <- tmp[sapply(tmp, length) == 1]
-    unlist(tmp)
-  })
-
-  all_names <- lapply(all_subsets, function(tmp){
-    if (is.null(tmp)){
-      "all"
-    } else {
-      paste0(names(tmp), "==", tmp)
-    }
-  })
-  all_names <- sapply(all_names, paste, collapse = "&")
-
-  split(contrasts, all_names)
-}
+### METHODS FUNCTIONS --------------------------------
 
 
+# Structure of testfun:
+# testfun <- function(assaydata, sampledata, formula, contrasts, logged = FALSE, ...){
+#
+#   # assaydata: data matrix
+#   # formula: model formula
+#   # contrasts: list of contrasts
+#   # logged: whether data are log-transformed or not
+#
+#
+#   return(results)
+# }
 
 
 
@@ -218,6 +249,7 @@ testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, v
 
   results <- lapply(contrasts, function(contr){
 
+    stopifnot(logged == FALSE)
     x <- getContrastSamples(design, contr, paired)
 
     data <- cbind(data[,names(x)[x == levels(x)[2]]], data[,names(x)[x == levels(x)[1]]]) ###
@@ -225,7 +257,7 @@ testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, v
     ttest_res <- data.frame(t(apply(data, 1, function(conc){
 
 
-      if (!is.null(paired)){
+      if (paired == TRUE){
         ix_na <- setNames(is.na(conc[names(x[x == levels(x)[1]])]) | is.na(conc[names(x[x == levels(x)[2]])]), NULL)
         conc[names(x[x == levels(x)[1]])][ix_na] <- NA
         conc[names(x[x == levels(x)[2]])][ix_na] <- NA
@@ -235,15 +267,13 @@ testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, v
 
       if (all(n > 1)) {
         res <- t.test(conc ~ x, var.equal = var.equal, paired = paired, na.action = "na.omit")
-        if (is.null(paired)){
+        if (paired == FALSE){
           # ratio of means
-          # exp if data are logged?
           est <- setNames(res$estimate, gsub("mean in group ", "", names(res$estimate)))
           fc <- as.numeric(est[levels(x)[2]] / est[levels(x)[1]])
           diff <- as.numeric(est[levels(x)[2]] - est[levels(x)[1]])
         } else {
-          # mean or ratios
-          # exp if data are logged?
+          # mean of ratios
           fc <- mean(conc[x == levels(x)[2]] / conc[x == levels(x)[1]], na.rm = TRUE)
           diff <- mean(conc[x == levels(x)[2]] - conc[x == levels(x)[1]], na.rm = TRUE)
         }
@@ -276,7 +306,7 @@ testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, v
 
 
 # testLM(data = C13@metAssays$frac, design = C13@colData, formula = ~ Celltype + Donor, contrasts = contrasts)
-# add missing log-transform...
+# add missing log-transform in the beginning?
 testLM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "fdr", ...){
 
   stopifnot(requireNamespace("contrast", quietly = TRUE))
@@ -378,7 +408,7 @@ testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
   if (length(block) > 0) formula <- update(formula, as.formula(paste0("~ .- (1|", block, ")")))
 
   if (logged == FALSE){
-    data <- log10(data)
+    data <- log2(data)
   }
   data <- as.data.frame(t(data))
   data[is.na(data)] <- NA
@@ -432,7 +462,9 @@ testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
 
 
 
-testLMM3 <- function(data, design, formula, contrasts, random = NULL, log = FALSE, p.adj.method = "fdr", ...){
+testLMM <- function(data, design, formula, contrasts, random = NULL, log = FALSE, logged = FALSE, p.adj.method = "fdr", ...){
+
+  # variables must be factor
 
   stopifnot(requireNamespace("nlme", quietly = TRUE))
   stopifnot(requireNamespace("multcomp", quietly = TRUE))
@@ -442,7 +474,11 @@ testLMM3 <- function(data, design, formula, contrasts, random = NULL, log = FALS
   data <- as.data.frame(t(data))
   data[is.na(data)] <- NA
 
-  if (log == TRUE){ data <- log2(data) }
+  if (logged == FALSE){
+    data <- log2(data)
+  }
+
+  # if (log == TRUE){ data <- log2(data) }
 
   form.fixed <- update(formula, conc ~ 0 + .)
 
@@ -523,7 +559,7 @@ testLMM3 <- function(data, design, formula, contrasts, random = NULL, log = FALS
 
       # tests
       conc.res <- summary(lmetest, test = multcomp::adjusted("none"))
-      dfres <- data.frame("diff" = conc.res$test$coefficients,
+      dfres <- data.frame("lfc" = conc.res$test$coefficients,
                           "pval" = conc.res$test$pvalues)
 
       # print(lmecontrasts)
@@ -533,12 +569,12 @@ testLMM3 <- function(data, design, formula, contrasts, random = NULL, log = FALS
       cmat <- sapply(seq_along(cmat), function(i) paste0(names(cmat)[i], cmat[[i]]) )
       # print(cmat)
 
-      lfcs <- log2(lmefit$coefficients$fixed[cmat[1,]] / lmefit$coefficients$fixed[cmat[2,]])
-      dfres$lfc <- as.numeric(lfcs)
+      # lfcs <- log2(lmefit$coefficients$fixed[cmat[1,]] / lmefit$coefficients$fixed[cmat[2,]])
+      # dfres$lfc <- as.numeric(lfcs)
 
       means <- dplyr::group_by(.data = data.lme, classes) %>% dplyr::summarise(mean = mean(conc)) %>% dplyr::pull(mean, name = classes)
       cmat <- sapply(lmecontrasts[[1]], function(x) trimws(strsplit(gsub("=.*", "", x), split = " - ")[[1]]) )
-      lfcs.means <- log2(means[cmat[1,]] / means[cmat[2,]])
+      lfcs.means <- means[cmat[1,]] - means[cmat[2,]]
       dfres$lfc.mean <- as.numeric(lfcs.means)
 
       rownames(dfres) <- names(contr.names)[match(rownames(dfres), contr.names)]

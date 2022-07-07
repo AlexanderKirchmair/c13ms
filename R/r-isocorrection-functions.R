@@ -3,6 +3,8 @@
 
 
 
+
+
 #' Natural isotope abundance correction
 #'
 #' @param TE
@@ -13,6 +15,7 @@
 #' @export
 #'
 #' @examples
+#' exampleTracerExperiment() %>% correctIso(assay = "raw")
 correctIso <- function(TE, assay = "imp", ...){
 
   assay <- .getAssays(TE, assay = assay, type = "iso")
@@ -75,13 +78,15 @@ isoCorr <- function(assaydata, molecules, Molecule = Molecule, MSion = MSion, tr
   write.csv(measurement, file = MeasurementFile, row.names = FALSE, na = "")
 
 
-  ### 2. Molecule file
+  ### 2. Molecule information file
+  # Three columns: "Molecule", "MS ion or MS/MS product ion" and "MS/MS neutral loss"
   message("Preparing molecule file...")
   MoleculeFile <- file.path(tmpdir, "MoleculeFile.csv")
   MolTable <- .makeMoleculeTable(molecules = molecules, Molecule = Molecule, MSion = MSion, mode = mode, tracer = tracer)
   write.csv(MolTable, file = MoleculeFile, row.names = FALSE, quote = FALSE)
 
-  ### 3. Element file
+  ### 3. Element information file
+  # Four columns: "Element", "Isotope abundance_Mass shift", "Tracer isotope mass shift", and "Tracer purity"
   message("Preparing element file...")
   ElementFile <- file.path(tmpdir, "ElementFile.csv")
   if (is.null(isocomp)) isocomp <- getElementCompositions()

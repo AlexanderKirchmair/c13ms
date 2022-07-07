@@ -28,7 +28,8 @@ exampleTracerExperiment <- function(nsamples = 10, nmets = 10, seed = 123){
   rownames(isoData) <- paste0(isoData$metabolite, "_", isoData$label)
 
   midl <- lapply(setNames(mets, mets), function(m){
-    tmp <- rmid(ncol = nsamples, nrow = nrow(subset(isoData, metabolite == m)), abundance = sample(10:100, 1))
+    a <- sample(10:100, 1) * runif(min = 0.8, max = 1.2, n = nsamples)
+    tmp <- rmid(ncol = nsamples, nrow = nrow(subset(isoData, metabolite == m)), abundance = a)
     rownames(tmp) <- paste(m, rownames(tmp), sep = "_")
     colnames(tmp) <- samples
     tmp
@@ -36,8 +37,10 @@ exampleTracerExperiment <- function(nsamples = 10, nmets = 10, seed = 123){
 
   # add DE
   n <- nrow(subset(isoData, metabolite == mets[1]))
-  tmpA <- rmid(p = (1:n)/n, ncol = sum(colData$group == "A"), nrow = n, abundance = 100)
-  tmpB <- rmid(p = rev((1:n)/n), ncol = sum(colData$group == "B"), nrow = n, abundance = 2)
+  nA <- sum(colData$group == "A")
+  nB <- sum(colData$group == "B")
+  tmpA <- rmid(p = (1:n)/n, ncol = nA, nrow = n, abundance = 100 * runif(min = 0.8, max = 1.2, n = nA))
+  tmpB <- rmid(p = rev((1:n)/n), ncol = nB, nrow = n, abundance = 2 * runif(min = 0.8, max = 1.2, n = nB))
   tmp <- cbind(tmpA, tmpB)
   dimnames(tmp) <- dimnames(midl[[1]])
   midl[[1]] <- tmp
@@ -123,7 +126,7 @@ rmid <- function(nrow = NULL, ncol = 6, p = NULL, colnames = NULL, size = 10^3, 
   mid <- rmultinom(n = ncol, size = size, prob = p)/size
   colnames(mid) <- colnames
 
-  if (!is.null(abundance)) mid <- mid * abundance
+  if (!is.null(abundance)) mid <- t( t(mid) * abundance )
   as.matrix(mid)
 }
 

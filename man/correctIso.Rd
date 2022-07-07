@@ -12,3 +12,6 @@ correctIso(TE, assay = "imp", ...)
 \description{
 Natural isotope abundance correction
 }
+\examples{
+exampleTracerExperiment() \%>\% correctIso(assay = "raw")
+}

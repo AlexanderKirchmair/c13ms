@@ -22,5 +22,6 @@ diffTest(
 \item{...}{}
 }
 \description{
-Differential abundance testing of isotope labelling data
+This doc is longer
+longer
 }
