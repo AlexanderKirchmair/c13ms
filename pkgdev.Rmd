@@ -41,7 +41,6 @@ use_package("crayon")
 use_package("rlang")
 use_package("matrixStats")
 
-
 use_package("multcomp", type = "Suggests")
 use_package("glmmTMB", type = "Suggests")
 use_package("limma", type = "Suggests")
@@ -81,7 +80,7 @@ Element data
 ```{r}
 
 isocomp <- getElementCompositions()
-use_data(isocomp, internal = TRUE)
+use_data(isocomp, internal = TRUE) # include data in package
 
 ```
 

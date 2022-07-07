@@ -2,7 +2,7 @@
 % Please edit documentation in R/r-difftest-functions.R
 \name{diffTest}
 \alias{diffTest}
-\title{Differential abundance testing of isotope labelling data}
+\title{Differential abundance testing}
 \usage{
 diffTest(
   TE,
@@ -19,9 +19,29 @@ diffTest(
 )
 }
 \arguments{
+\item{TE}{TE object}
+
+\item{contrasts}{List of contrasts in the format list(name = c("B", "A"), subclass = "celltype1")}
+
+\item{formula}{Formula}
+
+\item{type}{"iso" or "met"}
+
+\item{assay}{assay name}
+
+\item{logged}{are data already log-transformed?}
+
+\item{conf}{LOQ confidence values}
+
 \item{...}{}
 }
 \description{
-This doc is longer
-longer
+Various methods for differential abundance testing of isotope labelling data
+}
+\details{
+Metabolite and isotopologue abundances (values from 0 to Inf):
+Fractional labelling of metabolites and isotopologues (values between 0 and 1):
+}
+\examples{
+exampleTracerExperiment() \%>\% diffTest(contrasts = list(BvsA = list(group = c("B", "A"))), formula = ~ group, assay = "raw")
 }

@@ -12,9 +12,9 @@ setMethod(f = "show", signature = "TracerExperiment", definition = function(obje
   cat(.colorcat( paste0("qcAssays(", length(object@qcAssays), "):"), add = "", col = col), names(object@qcAssays), "\n")
   cat(.colorcat( paste0("results(", length(object@results), "):"), add = "", col = col), names(object@results), "\n")
   col <- "#757575"
-  .colorcat("-use method 'astidy' to get data as a long dataframe", col = col)
-  .colorcat("-use method 'assay' to get data as a 2D matrix", col = col)
-  .colorcat("-use method 'array' to get data as a 3D array", col = col)
+  # .colorcat("-use method 'astidy' to get data as a long dataframe", col = col)
+  # .colorcat("-use method 'assay' to get data as a 2D matrix", col = col)
+  # .colorcat("-use method 'array' to get data as a 3D array", col = col)
 })
 
 
@@ -148,7 +148,7 @@ setMethod(f = "astidy", signature = "TracerExperiment", definition = function(da
 .tidyTE <- function(TE, type = "iso"){
 
   if (type == "iso"){
-    iso <- lapply(TE@isoAssays, stretch)
+    iso <- lapply(TE@isoAssays, .stretch)
     iso <- lapply(setNames(names(iso), names(iso)), function(tmp) dplyr::rename(.data = iso[[tmp]], !!tmp := Value) )
     isotidy <- Reduce(dplyr::full_join, iso)
 

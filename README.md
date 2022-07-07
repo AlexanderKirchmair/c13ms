@@ -6,8 +6,8 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-This is an R package for the statistical and functional analysis of
-13C-labelling data.
+R package for the statistical and functional analysis of 13C labelling
+data.
 
 ## Installation
 
@@ -82,7 +82,7 @@ results(C13, "iso", "mid", "beta") %>% head(10)
 ## Visualization
 
 ``` r
-isoplot(C13, mets = metnames(C13)[1], title = metnames(C13)[1], cumulative = TRUE)
+isoplot(C13, mets = metnames(C13)[1], cumulative = T)
 ```
 
 <img src="man/figures/README-unnamed-chunk-7-1.svg" width="100%" />

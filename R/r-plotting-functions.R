@@ -310,6 +310,7 @@ ggiso <- function(mid, isodata, label = TRUE, cumulative = FALSE, ...){
 
   if (all(is.na(mid))) return(NULL)
 
+  mid.org <- mid
   if (cumulative == TRUE){
     tmp <- mid
     tmp[is.na(tmp)] <- 0
@@ -321,10 +322,11 @@ ggiso <- function(mid, isodata, label = TRUE, cumulative = FALSE, ...){
   }
 
   df <- .stretch(data.frame(mid))
+  df.org <- .stretch(data.frame(mid.org))
   df$metabolite <- isodata[df$Feature,]$metabolite
   df$iso <- isodata[df$Feature,]$label
   df$Value <- df$Value * 100
-  df$label <- paste0(round(df$Value), "%")
+  df$label <- paste0(round(df.org$Value * 100), "%")
   df$Sample <- factor(df$Sample, ordered = TRUE, levels = colnames(mid))
 
   if (cumulative == TRUE){
