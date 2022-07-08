@@ -242,14 +242,17 @@ getContrastSamples <- function(design, contrast, paired = NULL){
 
 
 
-testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, var.equal = FALSE, p.adj.method = "fdr", paired = FALSE,  ...){
+testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, var.equal = FALSE, p.adj.method = "fdr", paired = FALSE, FUN = NULL,  ...){
 
   if (paired == TRUE) message("Warning: Paired t-test requires matching non-NA samples .")
   if (paired == TRUE & !is.null(formula))  paired <- labels(terms(formula))
 
+  if (logged == FALSE){
+    data <- .logtrans(data, FUN = FUN)
+  }
+
   results <- lapply(contrasts, function(contr){
 
-    stopifnot(logged == FALSE)
     x <- getContrastSamples(design, contr, paired)
 
     data <- cbind(data[,names(x)[x == levels(x)[2]]], data[,names(x)[x == levels(x)[1]]]) ###
@@ -286,7 +289,7 @@ testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, v
 
     })))
 
-    if (logged == FALSE){ ttest_res$lfc <- log2(ttest_res$lfc) }
+    # if (logged == FALSE){ ttest_res$lfc <- log2(ttest_res$lfc) }
 
     ttest_res$padj <- p.adjust(ttest_res$pval, method = p.adj.method)
 
@@ -301,7 +304,7 @@ testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, v
 
 # testLM(data = C13@metAssays$frac, design = C13@colData, formula = ~ Celltype + Donor, contrasts = contrasts)
 # add missing log-transform in the beginning?
-testLM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "fdr", ...){
+testLM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "fdr", FUN = NULL, ...){
 
   stopifnot(requireNamespace("contrast", quietly = TRUE))
 
@@ -311,6 +314,9 @@ testLM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.metho
   data[is.na(data)] <- NA
   formula <- update(formula, conc ~  0 + .)
 
+  if (logged == FALSE){
+    data <- .logtrans(data, FUN = FUN)
+  }
 
   ### Contrasts and formula ----
 
@@ -369,7 +375,7 @@ testLM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.metho
     Reduce(rbind, tmpdf)
   })
   results <- Reduce(rbind, subset_result)
-  if (logged == FALSE){ results$lfc <- log2(results$lfc) }
+  # if (logged == FALSE){ results$lfc <- log2(results$lfc) }
 
   results$padj_all <- p.adjust(results$pval, method = p.adj.method)
 
@@ -388,8 +394,20 @@ testLM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.metho
 
 
 
+.logtrans <- function(data, FUN = NULL){
 
-testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "fdr", ...){
+  if (is.null(FUN)){
+    FUN <- function(x){
+      log2(x + min(min(x[.naf(x > 0)], na.rm = TRUE)/2, 0.5))
+    }
+  }
+
+  FUN(data)
+}
+
+
+
+testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "fdr", FUN = NULL, ...){
 
   stopifnot(requireNamespace("limma", quietly = TRUE))
 
@@ -402,8 +420,9 @@ testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
   if (length(block) > 0) formula <- update(formula, as.formula(paste0("~ .- (1|", block, ")")))
 
   if (logged == FALSE){
-    data <- log2(data)
+    data <- .logtrans(data, FUN = FUN)
   }
+
   data <- as.data.frame(t(data))
   data[is.na(data)] <- NA
   formula <- update(formula,  ~  0 + .)
@@ -456,7 +475,10 @@ testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
 
 
 
-testLMM <- function(data, design, formula, contrasts, random = NULL, log = FALSE, logged = FALSE, p.adj.method = "fdr", ...){
+
+# fix all log-transforms
+
+testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FALSE, p.adj.method = "fdr", FUN = NULL, ...){
 
   # variables must be factor
 
@@ -469,10 +491,8 @@ testLMM <- function(data, design, formula, contrasts, random = NULL, log = FALSE
   data[is.na(data)] <- NA
 
   if (logged == FALSE){
-    data <- log2(data)
+    data <- .logtrans(data, FUN = FUN)
   }
-
-  # if (log == TRUE){ data <- log2(data) }
 
   form.fixed <- update(formula, conc ~ 0 + .)
 
@@ -493,9 +513,9 @@ testLMM <- function(data, design, formula, contrasts, random = NULL, log = FALSE
     contr.names <- apply(sapply(tmpcontrasts, "[[", 1), 2, paste, collapse = " - ")
 
     nadf <- data.frame(row.names = names(tmpcontrasts))
-    nadf$diff <- NA_real_
-    nadf$pval <- NA_real_
     nadf$lfc <- NA_real_
+    # nadf$diff <- NA_real_
+    nadf$pval <- NA_real_
     nadf$lfc.mean <- NA_real_
     nadf <- as.matrix(nadf)
 
@@ -611,7 +631,7 @@ testLMM <- function(data, design, formula, contrasts, random = NULL, log = FALSE
 
 
 
-testDREAM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "fdr", ...){
+testDREAM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "fdr", FUN = FUN, ...){
 
   stopifnot(requireNamespace("variancePartition", quietly = TRUE))
 
@@ -622,6 +642,10 @@ testDREAM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
   # design <- design[,colnames(design) %in% labels(terms(formula)), drop = FALSE]
   formula <- update(formula, ~  0 + .)
 
+
+  if (logged == FALSE){
+    data <- .logtrans(data, FUN = FUN)
+  }
 
   ### Contrasts and formula ----
 
@@ -636,9 +660,6 @@ testDREAM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
     subset_design <- design[rownames(subset_data), all.vars(formula),drop = FALSE]
     subset_design <- na.omit(subset_design)
     subset_data <- subset_data[rownames(subset_design),]
-
-
-    if (logged == FALSE) subset_data <- log10(subset_data + 1)
 
     subset_data <- subset_data[,colSums(is.na(subset_data)) == 0, drop = FALSE]
 
@@ -691,7 +712,7 @@ testDREAM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
 
 
 
-testBETAREG <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "fdr", ...){
+testBETAREG <- function(data, design, formula, contrasts, p.adj.method = "fdr", ...){
 
   stopifnot(requireNamespace("betareg", quietly = TRUE))
   stopifnot(requireNamespace("multcomp", quietly = TRUE))
@@ -782,7 +803,7 @@ testBETAREG <- function(data, design, formula, contrasts, logged = FALSE, p.adj.
 
 
 
-testBETA <- function(data, design, formula, contrasts, zotrans = NULL, logged = FALSE, p.adj.method = "fdr", verbose = FALSE, ...){
+testBETA <- function(data, design, formula, contrasts, zotrans = NULL, p.adj.method = "fdr", verbose = FALSE, ...){
 
   stopifnot(requireNamespace("glmmTMB", quietly = TRUE))
   stopifnot(requireNamespace("multcomp", quietly = TRUE))

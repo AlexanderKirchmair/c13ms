@@ -16,7 +16,21 @@ makeTracerExperiment(
 )
 }
 \arguments{
-\item{assay}{}
+\item{data}{raw isotopologue abundances}
+
+\item{metabolite}{metabolite column}
+
+\item{label}{label column}
+
+\item{QC}{QC assays}
+
+\item{metData}{metabolite annotation}
+
+\item{colData}{sample annotation}
+
+\item{meta}{metadata}
+
+\item{assay}{initial assay name}
 }
 \description{
 Make new TracerExperiment
