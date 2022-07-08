@@ -5,14 +5,14 @@
 
 #' Make new TracerExperiment
 #'
-#' @param data
-#' @param metabolite
-#' @param label
-#' @param QC
-#' @param metData
-#' @param colData
-#' @param meta
-#' @param assay
+#' @param data raw isotopologue abundances
+#' @param metabolite metabolite column
+#' @param label label column
+#' @param QC QC assays
+#' @param metData metabolite annotation
+#' @param colData sample annotation
+#' @param meta metadata
+#' @param assay initial assay name
 #'
 #' @return
 #' @export
@@ -58,14 +58,6 @@ makeTracerExperiment <- function(data, metabolite = metabolite, label = label, Q
 
 
 
-
-
-
-
-
-
-
-
 #' Order isotopologue labels numerically
 #'
 #' @param x
@@ -78,8 +70,6 @@ makeTracerExperiment <- function(data, metabolite = metabolite, label = label, Q
   xlevels <- paste0(pattern, xlevels)
   factor(x, ordered = TRUE, levels = xlevels)
 }
-
-
 
 
 
@@ -346,41 +336,6 @@ subsetMet <- function(data, met = NULL, isodata = NULL){
   }
   tmp
 }
-
-
-
-
-
-#
-#
-# split_by <- function(data, design, formula){
-#
-#   design <- design[colnames(data),]
-#
-#   if (length(labels(terms(formula))) > 0){
-#     groups <- apply(design[,labels(terms(formula)), drop = FALSE], 1, paste0,  collapse = "_")
-#     stopifnot(all(names(groups) == colnames(data)))
-#     data_split <- lapply(setNames(unique(groups), unique(groups)), function(g) data[,groups == g, drop = FALSE])
-#   } else {
-#     data_split <- list(data)
-#   }
-#
-#   data_split
-# }
-#
-#
-# unsplit_by <- function(list){
-#
-#   if (length(list) == 1) return(list[[1]])
-#
-#   stopifnot(all(Reduce(intersect, lapply(list, rownames)) %in% rownames(list[[1]])))
-#   list <- lapply(list, function(tmp) tmp[rownames(list[[1]]),, drop = FALSE])
-#   Reduce(cbind, list)
-#
-# }
-
-
-
 
 
 

@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# c13ms: Analysis of 13C-labelled metabolomics data
+# Analysis of 13C-labelled metabolomics data
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -44,6 +44,8 @@ Here are some basic functionalities:
 
 C13 <- exampleTracerExperiment(nsamples = 6, nmets = 5)
 
+makeTracerExperiment(cbind(isoData(C13), assay(C13, "raw")), metData = metData(C13), colData = colData(C13))
+
 colnames(C13)
 metnames(C13)
 rownames(C13)
@@ -55,13 +57,22 @@ C13 %>% subset(group == "A")
 C13groups <- split(C13, by = ~ group)
 C13 <- with(C13groups, A + B)
 
-metData(C13)
-isoData(C13)
-
 assay(C13, "raw")
 sumMets(C13, assay = "raw")
 
 ```
+
+
+Isotopologue and metabolite annotations are required to be in a specific format:
+```{r}
+isoData(C13)
+```
+
+```{r}
+metData(C13)
+```
+
+
 
 
 ## Workflow

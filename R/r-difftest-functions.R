@@ -299,12 +299,6 @@ testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, v
 
 
 
-
-
-
-
-
-
 # testLM(data = C13@metAssays$frac, design = C13@colData, formula = ~ Celltype + Donor, contrasts = contrasts)
 # add missing log-transform in the beginning?
 testLM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.method = "fdr", ...){
