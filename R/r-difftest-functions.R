@@ -476,8 +476,6 @@ testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
 
 
 
-# fix all log-transforms
-
 testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FALSE, p.adj.method = "fdr", FUN = NULL, ...){
 
   # variables must be factor
@@ -712,7 +710,7 @@ testDREAM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
 
 
 
-testBETAREG <- function(data, design, formula, contrasts, p.adj.method = "fdr", ...){
+testBETAREG <- function(data, design, formula, contrasts, p.adj.method = "fdr", logged = FALSE, ...){
 
   stopifnot(requireNamespace("betareg", quietly = TRUE))
   stopifnot(requireNamespace("multcomp", quietly = TRUE))
@@ -721,6 +719,8 @@ testBETAREG <- function(data, design, formula, contrasts, p.adj.method = "fdr", 
 
   data <- as.data.frame(t(data))
   data[is.na(data)] <- NA
+  stopifnot(min(data, na.rm = TRUE) >= 0 & max(data, na.rm = TRUE) <= 1)
+
   formula <- update(formula, conc ~  0 + .)
 
 
@@ -803,7 +803,7 @@ testBETAREG <- function(data, design, formula, contrasts, p.adj.method = "fdr", 
 
 
 
-testBETA <- function(data, design, formula, contrasts, zotrans = NULL, p.adj.method = "fdr", verbose = FALSE, ...){
+testBETA <- function(data, design, formula, contrasts, zotrans = NULL, p.adj.method = "fdr", verbose = FALSE, logged = FALSE, ...){
 
   stopifnot(requireNamespace("glmmTMB", quietly = TRUE))
   stopifnot(requireNamespace("multcomp", quietly = TRUE))
@@ -812,6 +812,8 @@ testBETA <- function(data, design, formula, contrasts, zotrans = NULL, p.adj.met
 
   data <- as.data.frame(t(data))
   data[is.na(data)] <- NA
+  stopifnot(min(data, na.rm = TRUE) >= 0 & max(data, na.rm = TRUE) <= 1)
+
   formula <- update(formula, conc ~  0 + .)
 
   if (is.null(zotrans)) zotrans <- is.null(list(...)[["ziformula"]])
@@ -826,7 +828,7 @@ testBETA <- function(data, design, formula, contrasts, zotrans = NULL, p.adj.met
   ### Model fitting and testing ----
 
   results <- lapply(subsets, function(tmpsubset){
-    subset_data <- getDataSubset(data, design, contrast = tmpsubset)
+    subset_data <- getDataSubset(data, design[rownames(data),], contrast = tmpsubset)
     subset_design <- design[rownames(subset_data), intersect(all.vars(formula), colnames(design)),drop = FALSE]
 
     nares <- setNames(rep(NA, length(tmpsubset)), names(tmpsubset))
@@ -862,7 +864,6 @@ testBETA <- function(data, design, formula, contrasts, zotrans = NULL, p.adj.met
           # Model
           fit <- glmmTMB::glmmTMB(formula, subset_design, family = family, ...)
           sres <- summary(fit)
-
 
         },
         error = function(x){ NULL })
