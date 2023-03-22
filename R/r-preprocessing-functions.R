@@ -42,7 +42,7 @@ estimateLOQs <- function(TE, assay = "raw", qc = "blanks", qc_LOD = "lod", qc_LO
 
   # calculate LOQ values (i.e., number of sds above LOD)
   LOQ <- (data - data.matrix(LODdf))/sdLOD
-  LOQ[sdLOD == 0] <- Inf
+  LOQ[.naf(sdLOD == 0),] <- Inf
   TE@qcAssays[[qc_LOQ]] <- LOQ
 
   # sdLODdf <- data.frame(matrix(rep(sdLOD, nrow(TE@colData)), ncol = nrow(TE@colData)))
