@@ -1,6 +1,8 @@
 
 # NORMALIZATION FUNCTIONS
 
+# Non-linear methods only work with summed metabolite abundances, e.g. log-based methods
+# These can be retrospectively weighted by the MID fractions to get isotopologue abundances
 
 
 #' Normalization of isotopologue abundance data
@@ -17,14 +19,13 @@
 #' @export
 #'
 #' @examples
-normalizeIsoAssay <- function(isoAssay, method = ~ IS + SUM, isodata = NULL, metAssay = NULL, fractions = NULL, colData = NULL, quiet = TRUE, ...){
+normalizeIsoAssay <- function(isoAssay, method = ~ COLSUM, isodata = NULL, metAssay = NULL, fractions = NULL, colData = NULL, quiet = TRUE, ...){
 
   ### Function for data normalization
-  # provide custom functions in ellipsis
-  # e.g. normalizeTE(data, method = ~ TMS + SUMFUN, SUMFUN = function(x){x/sum(x, na.rm = TRUE)})
 
-  # Non-linear methods only work with summed metabolite abundances, e.g. log-based methods
-  # These can be retrospectively weighted by the MID fractions to get isotopologue abundances
+  # Provide custom functions in ellipsis:
+  # e.g. normalizeTE(data, method = ~ IS + SUMFUN, SUMFUN = function(x){x/sum(x, na.rm = TRUE)})
+
 
   ### INPUT ----
 
@@ -40,7 +41,7 @@ normalizeIsoAssay <- function(isoAssay, method = ~ IS + SUM, isodata = NULL, met
   }
 
   methods <- strsplit(sub("~", "", deparse(method)), split = " + ", fixed = T)[[1]]
-  methods.local <- methods[methods %in% c("COLSUM", "ISOSUM", "LOG", "TMS", "IS", "COLMEDIAN", "HKM", "ROWMEAN", "ROWMEDIAN", "TMM", "LEVEL", "AUTO", "SCALE", "VMN", "VSN")]
+  methods.local <- methods[methods %in% c("COLSUM", "ISOSUM", "LOG", "IS", "COLMEDIAN", "HKM", "ROWMEAN", "ROWMEDIAN", "TMM", "LEVEL", "AUTO", "SCALE", "VMN", "VSN")]
   methods.colData <- methods[!methods %in% methods.local & methods %in% colnames(colData)]
   methods.functions <- methods[!methods %in% methods.local & !methods %in% colnames(colData) & methods %in% names(FUNs)]
 
@@ -55,7 +56,7 @@ normalizeIsoAssay <- function(isoAssay, method = ~ IS + SUM, isodata = NULL, met
 
     } else if (m %in% methods.local){
       # apply locally defined functions
-      m <- paste0("norm", m)
+      m <- paste0(".norm", m)
       if (!quiet) .colorcat(c("Normalization using", m))
       data <- do.call(m, c(list("data" = data.matrix(data), "sumdata" = sumdata, "fractions" = fractions, "isodata" = isodata, "coldata" = colData), list(...)))
 
@@ -79,31 +80,27 @@ normalizeIsoAssay <- function(isoAssay, method = ~ IS + SUM, isodata = NULL, met
 
 
 
-
-
-
-
-
-
 ### FUNCTIONS ----
+
+
 
 ### Sample-wise linear transformations ----
 
 # Simple normalization factors
-normColData <- function(data, normfactor){
+.normColData <- function(data, normfactor){
   stopifnot(length(normfactor) == ncol(data))
   t( t(data)/normfactor )
 }
 
 
 # Total metabolite sum
-normCOLSUM <- function(data, ...){
+.normCOLSUM <- function(data, ...){
   t( t(data)/colSums(data, na.rm = TRUE) )
 }
 
 
 
-normISOSUM <- function(data, isodata, FUN = colSums, ...){
+.normISOSUM <- function(data, isodata, FUN = colSums, ...){
 
   # Select consistently measured metabolites
   tmp <- data.frame(!is.na(data))
@@ -142,7 +139,7 @@ normISOSUM <- function(data, isodata, FUN = colSums, ...){
 
 
 # Housekeeping metabolite
-normHKM <- function(data, isodata, sumdata, ...){
+.normHKM <- function(data, isodata, sumdata, ...){
 
   data <- data.frame(data)
   data$metabolite <- isodata$metabolite
@@ -169,21 +166,21 @@ normHKM <- function(data, isodata, sumdata, ...){
 
 
 # Internal standard
-normIS <- function(data, ...){
+.normIS <- function(data, ...){
   ISmet <- list(...)[["ISmet"]]
   data <- data.matrix(data)
   t( t(data) / (mean(data[ISmet,])/data[ISmet,]) )
 }
 
 # Sample medians
-normCOLMEDIAN <- function(sumdata, data, ...){
+.normCOLMEDIAN <- function(sumdata, data, ...){
   sample_medians <- apply(sumdata, 2, median, na.rm = TRUE)
   t( t(data)/sample_medians )
 }
 
 # Trimmed mean of m-values
-normTMM <- function(sumdata, data, ...){
-  # ?????????????????????????????
+.normTMM <- function(sumdata, data, ...){
+  stopifnot(requireNamespace("edgeR"))
   normfactors <- edgeR::calcNormFactors(sumdata[!is.na( rowSums(sumdata)),])
   t( t(data)/normfactors )
 }
@@ -196,25 +193,25 @@ normTMM <- function(sumdata, data, ...){
 
 
 # Metabolite sum over samples
-normROWMEAN <- function(data, ...){
+.normROWMEAN <- function(data, ...){
   data / rowMeans(data, na.rm = TRUE)
 }
 
-normROWMEDIAN <- function(data, ...){
+.normROWMEDIAN <- function(data, ...){
   data / matrixStats::rowMedians(data, na.rm = TRUE)
 }
 
 
 
 # Level-scaling
-normLEVEL <- function(data, isodata, sumdata, ...){
+.normLEVEL <- function(data, isodata, sumdata, ...){
   # Divide each metabolite by its mean over all samples
   data[rownames(isodata),] / rowMeans(sumdata, na.rm = TRUE)[isodata$metabolite]
 }
 
 
 # Auto-scaling
-normSCALE <- function(sumdata, data, isodata, fractions, ...){
+.normSCALE <- function(sumdata, data, isodata, fractions, ...){
 
   scalefac <- matScale(sumdata, cols = TRUE, rows = FALSE, center = FALSE, scale = TRUE)
   fractions[rownames(isodata),] * scalefac[isodata$metabolite,]
@@ -226,14 +223,14 @@ normSCALE <- function(sumdata, data, isodata, fractions, ...){
 ### Non-linear transformations ----
 
 # Log
-normLOG <- function(sumdata, fractions, isodata, pseudocount = 1, ...){
+.normLOG <- function(sumdata, fractions, isodata, pseudocount = 1, ...){
   logsum <- log10(sumdata + pseudocount)
   fractions * logsum[isodata$metabolite,]
 }
 
 
 
-normVSN <- function(sumdata, fractions, isodata, ...){
+.normVSN <- function(sumdata, fractions, isodata, ...){
 
   fitdata <- vsn::justvsn(x = data.matrix(sumdata))
   fractions[rownames(isodata),] * fitdata[isodata$metabolite,]
@@ -243,18 +240,14 @@ normVSN <- function(sumdata, fractions, isodata, ...){
 
 
 
+.normVMN <- function(data, fractions, coldata, isodata, group, ...){
 
-
-
-normVMN <- function(data, fractions, coldata, isodata, group, ...){
-
-  norm <- vmn(data, groups = coldata[,group])
+  norm <- .vmn(data, groups = coldata[,group])
   fractions[rownames(isodata),] * norm[isodata$metabolite,]
 
 }
 
-
-vmn <- function(sumdata, groups, maxit = 10000, ...){
+.vmn <- function(sumdata, groups, maxit = 10000, ...){
 
   data <- sumdata
   col_weights <- mean(colMeans(data, na.rm = TRUE)) / colMeans(data, na.rm = TRUE)
@@ -293,16 +286,6 @@ vmn <- function(sumdata, groups, maxit = 10000, ...){
   new
 
 }
-
-
-
-
-
-
-
-
-
-
 
 
 

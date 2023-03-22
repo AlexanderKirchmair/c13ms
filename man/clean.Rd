@@ -7,16 +7,37 @@
 clean(
   TE,
   assay = "norm",
+  qc_LOQ = "loq",
+  new_assay = "clean",
+  thres_LOQ = 1.5,
+  max_nafrac_per_group = 1/3,
+  min_rep_per_group = 2,
   split_by = ~1,
   exclude = "internal.standard",
-  remove_imp = TRUE,
-  max_na = 1/3,
-  type = "iso",
+  remove_imp = FALSE,
   ...
 )
 }
 \arguments{
-\item{maxNAfrac_per_group}{}
+\item{TE}{TracerExperiment}
+
+\item{assay}{norm}
+
+\item{qc_LOQ}{LOQ values}
+
+\item{new_assay}{clean}
+
+\item{thres_LOQ}{LOQ threshold (values below are set to NA)}
+
+\item{max_nafrac_per_group}{maximum allowed fraction of NA values per group}
+
+\item{min_rep_per_group}{minimum required number of non-NA values per group}
+
+\item{split_by}{factor(s) from colData to define groups}
+
+\item{exclude}{internal standard}
+
+\item{remove_imp}{optionally, remove all imputed values}
 }
 \description{
 Cleaning of data

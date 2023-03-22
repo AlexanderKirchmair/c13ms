@@ -6,7 +6,7 @@
 \usage{
 normalizeIsoAssay(
   isoAssay,
-  method = ~IS + SUM,
+  method = ~COLSUM,
   isodata = NULL,
   metAssay = NULL,
   fractions = NULL,

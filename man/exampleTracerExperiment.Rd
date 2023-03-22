@@ -4,7 +4,7 @@
 \alias{exampleTracerExperiment}
 \title{Make example TracerExperiment}
 \usage{
-exampleTracerExperiment(nsamples = 10, nmets = 10, seed = 123)
+exampleTracerExperiment(nsamples = 10, nmets = 10, seed = 123, add_qc = FALSE)
 }
 \arguments{
 \item{nmets}{}

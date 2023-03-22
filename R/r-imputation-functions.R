@@ -6,96 +6,68 @@
 #' Imputation/missing value treatment of isotopologue abundance data
 #'
 #' @param TE
-#' @param assay
-#' @param original
-#' @param nan
-#' @param na
-#' @param split_by
-#' @param maxNAfrac_per_group
+#' @param assay cleaned data with missing values
+#' @param original raw values without missing values
+#' @param nan replacement for NaN values (default = NA)
+#' @param na replacement for NA values (number, method or function)
 #' @param exclude
+#' @param qc_LOD
+#' @param qc_LOQ
+#' @param type
 #' @param ...
 #'
 #' @return
 #' @export
 #'
 #' @examples
-imputeTE <- function(TE, assay = "lod", original = "raw", nan = NA, na = "", split_by = ~ 1, maxNAfrac_per_group = 0.5, exclude = NULL, type = "iso", complete = FALSE,  ...){
+#' exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> preprocessLOQs() |> impute(nan = 0, na = "linsubLODs")
+imputeTE <- function(TE, assay = "lod", original = "raw", nan = NA, na = c("subLODs", "linsubLODs", "LOD50", "missForest"), qc_LOD = "lod", qc_LOQ = "loq", exclude = "internal.standard", type = "iso", ...){
+
 
   data.org <-  .getAssays(TE, assay = assay, type = type)
   data <- data.org
   design <- TE@colData
 
-  ### NaN replacement
+  LOD <- TE@qcAssays[[qc_LOD]]
+  LOQ <- TE@qcAssays[[qc_LOQ]]
+
+  LOD <- LOD[rownames(data), colnames(data)]
+  LOQ <- LOQ[rownames(data), colnames(data)]
+
+  raw <- .getAssays(TE, assay = original, type = type)
+
+  if (length(na) > 1) na <- na[1]
+
+
+  # NaN values
   if (!is.null(nan)){
     message("Replacing nan")
     data[is.nan(data.matrix(data))] <- nan
-
   }
 
-  ### NA imputation
-  if (na == "missForest"){
-    message("missForest imputation")
-    res <- missForest::missForest(data)
-    imp <- res$ximp
+  # NA values
+  if (is.numeric(na)){
+    data[is.na(data.matrix(data))] <- na
 
-  } else if (na == "LOD50"){
-    message("LOD50 imputation")
-    lods <- TE@qcAssays$lod
-    lods <- lods[rownames(data), colnames(data)]
-    imp <- data
-    imp[is.na(imp)] <- lods[is.na(imp)] * 0.5
+  } else if (is.character(na)){
+    # na should be the name of the function
+    # any NaNs still present are treated as NAs
+    imp <- do.call(what = paste0(".imp_", tolower(na)), args = list(data = data, LOD = LOD, LOQ = LOQ, raw = raw, ...))
+    ix <- is.na(data.matrix(data))
+    data[ix] <- imp[ix]
 
-  } else if (na == "linsubLODs"){
-    message("weighted subtraction of LODs from raw")
-    raw <- .getAssays(TE, assay = original, type = type)
-    lods <- TE@qcAssays$lod
-    loqs <- TE@qcAssays$loq
-    lods <- lods[rownames(raw), colnames(raw)]
-    loqs <- loqs[rownames(raw), colnames(raw)]
+  } else if (is.function(na)){
+    imp <- na(data, ...)
+    ix <- is.na(data.matrix(data))
+    data[ix] <- imp[ix]
 
-    linw <- (raw - lods)/(loqs - lods)
-    tmp <- raw - lods * linw
-    tmp[.naf(tmp < 0)] <- 0
-
-    imp <- data
-    imp[is.na(data.matrix(imp))] <- tmp[is.na(data.matrix(imp))]
-
-  } else if (na == "subLODs"){
-    message("subtraction of LODs from raw")
-    raw <- .getAssays(TE, assay = original, type = type)
-    lods <- TE@qcAssays$lod
-    imp <- raw - lods
-    imp[.naf(imp < 0)] <- 0
 
   } else {
-    message("No method selected, using original values")
-    raw <- .getAssays(TE, assay = original, type = type)
-    imp <- data
-    imp[is.na(data.matrix(imp))] <- raw[is.na(data.matrix(imp))]
+    data <- data
   }
 
-
-
-
-  ### Post-process
-
-  imp <- imp[rownames(data), colnames(data)]
-
-  # # Split into groups
-  # data_split <- split_by(data, design, formula = split_by)
-  # imp_split <- split_by(imp, design, formula = split_by)
-  #
-  # imp_split <- lapply(seq_along(imp_split), function(tmp){
-  #   ix <- rowMeans(is.na(data_split[[tmp]])) > maxNAfrac_per_group
-  #   imp_split[[tmp]][ix,] <- data_split[[tmp]][ix,]
-  #   imp_split[[tmp]]
-  # })
-  #
-  # imp <- unsplit_by(imp_split)
-  # imp <- imp[,colnames(data.org)]
-  imp[rownames(imp) %in% exclude,] <- data.org[rownames(imp) %in% exclude,]
-
-  data.frame(imp)
+  data[rownames(data) %in% exclude,] <- data.org[rownames(data.org) %in% exclude,]
+  data.frame(data)
 
 }
 
@@ -103,7 +75,36 @@ imputeTE <- function(TE, assay = "lod", original = "raw", nan = NA, na = "", spl
 
 
 
+### FUNCTIONS ----
 
+
+# Replace data by LOD-subtracted original values
+.imp_sublods <- function(data, LOD, raw, ...){
+  imp <- raw - LOD
+  imp[.naf(imp < 0)] <- 0
+  imp
+}
+
+
+# Weighted subtraction of LODs from raw
+.imp_linsublods <- function(LOD, LOQ, raw, ...){
+  imp <- raw - LOD / LOQ
+  imp[.naf(imp < 0)] <- 0
+  imp
+}
+
+
+# Replace data by LOD50 values
+.imp_lod50 <- function(LOD, ...){
+  LOD * 0.5
+}
+
+
+# MissForest imputation
+.imp_missforest <- function(data, ...){
+  res <- missForest::missForest(data)
+  res$ximp
+}
 
 
 

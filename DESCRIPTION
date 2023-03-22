@@ -18,7 +18,7 @@ Imports:
     methods,
     rlang,
     SummarizedExperiment
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1
 Suggests: 
     limma,
     glmmTMB,
@@ -26,7 +26,7 @@ Suggests:
     nlme,
     missForest,
     betareg,
-    contrasts,
+    contrast,
     testthat (>= 3.0.0)
 Collate: 
     'AllImports.R'

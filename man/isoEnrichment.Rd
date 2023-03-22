@@ -6,11 +6,10 @@
 \usage{
 isoEnrichment(
   TE,
-  assay = "norm",
-  max_na = 0,
-  max_imp = 0.25,
+  assay = "mid",
+  new_assay = "frac",
+  na.rm = TRUE,
   na.rm.iso = TRUE,
-  na.rm = FALSE,
   ...
 )
 }

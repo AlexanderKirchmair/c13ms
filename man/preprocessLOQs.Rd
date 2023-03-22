@@ -7,15 +7,24 @@
 preprocessLOQs(
   TE,
   assay = "raw",
-  LODassay = "lod",
-  LOQassay = "loq",
+  new_assay = "lod",
+  thres_LOQ = 1.5,
+  qc_LOD = "lod",
+  qc_LOQ = "loq",
+  below_LOQ = NA,
+  below_LOD = NaN,
   exclude = "internal.standard",
   ...
 )
 }
 \arguments{
+\item{TE}{TracerExperiment}
+
 \item{...}{}
 }
 \description{
 Preprocessing based on LOD/LOQ estimates
+}
+\examples{
+exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> preprocessLOQs()
 }

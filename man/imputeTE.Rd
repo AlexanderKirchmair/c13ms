@@ -9,18 +9,28 @@ imputeTE(
   assay = "lod",
   original = "raw",
   nan = NA,
-  na = "",
-  split_by = ~1,
-  maxNAfrac_per_group = 0.5,
-  exclude = NULL,
+  na = c("subLODs", "linsubLODs", "LOD50", "missForest"),
+  qc_LOD = "lod",
+  qc_LOQ = "loq",
+  exclude = "internal.standard",
   type = "iso",
-  complete = FALSE,
   ...
 )
 }
 \arguments{
+\item{assay}{cleaned data with missing values}
+
+\item{original}{raw values without missing values}
+
+\item{nan}{replacement for NaN values (default = NA)}
+
+\item{na}{replacement for NA values (number, method or function)}
+
 \item{...}{}
 }
 \description{
 Imputation/missing value treatment of isotopologue abundance data
+}
+\examples{
+exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> preprocessLOQs() |> impute(nan = 0, na = "linsubLODs")
 }

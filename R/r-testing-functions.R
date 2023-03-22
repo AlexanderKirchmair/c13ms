@@ -9,7 +9,7 @@
 #' @export
 #'
 #' @examples
-exampleTracerExperiment <- function(nsamples = 10, nmets = 10, seed = 123){
+exampleTracerExperiment <- function(nsamples = 10, nmets = 10, seed = 123, add_qc = FALSE){
 
   set.seed(seed)
   samples <- c(paste0(rep("A", floor(nsamples/2)), 1:floor(nsamples/2)), paste0(rep("B", ceiling(nsamples/2)), 1:ceiling(nsamples/2)))
@@ -45,9 +45,22 @@ exampleTracerExperiment <- function(nsamples = 10, nmets = 10, seed = 123){
   dimnames(tmp) <- dimnames(midl[[1]])
   midl[[1]] <- tmp
 
-  data <- data.frame(isoData, Reduce(f = rbind, midl))
+  assaydata <- Reduce(f = rbind, midl)
+  data <- data.frame(isoData, assaydata)
 
-  makeTracerExperiment(data, metData = metData, colData = colData)
+  if (add_qc == TRUE){
+    set.seed(seed)
+    blanks <- data.frame(row.names = rownames(data),
+                         "blankA" = rowMeans(assaydata[,sample(nsamples)])*0.1,
+                         "blankB" = rowMeans(assaydata[,sample(nsamples)])*0.15,
+                         "blankC" = rowMeans(assaydata[,sample(nsamples)])*0.2)
+    qc <- list("blanks" = blanks)
+  } else {
+    qc <- NULL
+  }
+
+
+  makeTracerExperiment(data, metData = metData, colData = colData, QC = qc)
 }
 
 

@@ -4,7 +4,7 @@
 \alias{MID}
 \title{Mass isotopomer distribution (MID)}
 \usage{
-MID(TE, assay = "norm", max_na = 0, max_imp = 0.25, remove_imp = TRUE, ...)
+MID(TE, assay = "norm", new_assay = "mid", ...)
 }
 \arguments{
 \item{...}{}

@@ -358,13 +358,27 @@ setMethod(f = "subset", signature = "TracerExperiment", definition = function(x,
 })
 
 
-setMethod(f = "normalize", signature = "TracerExperiment", definition = function(object, method, assay = NULL, ...){
+setMethod(f = "normalize", signature = "TracerExperiment", definition = function(object, method, assay = NULL, metassay = NULL, thres_LOQ = 1, min_groupfrac_per_iso = 0.9, split_by = ~ 1, ...){
 
-  if (is.null(assay)) assay <- "corr"
-  if (is.null(object@metAssays[[assay]])) object@metAssays[[assay]] <- sumMets(object, assay, na.rm = TRUE)
+  if (is.null(assay)){
+    message("Using default assay 'corr'")
+    assay <- "corr"
+  }
+  if (is.null(metassay)){
+    message("Calculating metabolite sums using 'sumMets()'...")
+    metsums <- sumMets(object, assay,
+                       thres_LOQ = thres_LOQ,
+                       max_nafrac_per_met = 0.9,
+                       max_nafrac_per_group = 1,
+                       min_rep_per_group = 1,
+                       min_groupfrac_per_iso = min_groupfrac_per_iso,
+                       split_by = split_by,
+                       na_iso.rm = TRUE,
+                       na.rm = TRUE)
+  }
 
   object@isoAssays$norm <- normalizeIsoAssay(isoAssay = object@isoAssays[[assay]],
-                                             metAssay = object@metAssays[[assay]],
+                                             metAssay = metsums,
                                              isodata = object@isoData,
                                              fractions = MID(object, assay = assay),
                                              colData = object@colData,

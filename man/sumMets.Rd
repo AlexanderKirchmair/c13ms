@@ -4,9 +4,38 @@
 \alias{sumMets}
 \title{Summarize isotopologues to metabolites}
 \usage{
-sumMets(TE, assay = "norm", max_na = 0.1, max_imp = 0.25, ...)
+sumMets(
+  TE,
+  assay = "norm",
+  thres_LOQ = 1.5,
+  max_nafrac_per_met = 0.25,
+  max_nafrac_per_group = 0.1,
+  min_rep_per_group = 2,
+  min_groupfrac_per_iso = 0.8,
+  split_by = ~1,
+  exclude = "internal.standard",
+  na_iso.rm = TRUE,
+  na.rm = TRUE,
+  ...
+)
 }
 \arguments{
+\item{TE}{TracerExperiment}
+
+\item{assay}{norm}
+
+\item{thres_LOQ}{LOQ threshold (values below are set to NA)}
+
+\item{max_nafrac_per_met}{maximum allowed fraction of isotopologue NA values per metabolite}
+
+\item{max_nafrac_per_group}{maximum allowed fraction of NA values per group}
+
+\item{min_rep_per_group}{minimum required number of non-NA values per group}
+
+\item{min_groupfrac_per_iso}{minimum required number of non-NA groups per isotopologue}
+
+\item{split_by}{factor(s) from colData to define groups}
+
 \item{...}{}
 }
 \description{

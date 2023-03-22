@@ -203,31 +203,60 @@ metnames <- function(x, ...){
 
 #' Summarize isotopologues to metabolites
 #'
-#' @param TE
-#' @param assay
+#' @param TE TracerExperiment
+#' @param assay norm
+#' @param thres_LOQ LOQ threshold (values below are set to NA)
+#' @param max_nafrac_per_met maximum allowed fraction of isotopologue NA values per metabolite
+#' @param max_nafrac_per_group maximum allowed fraction of NA values per group
+#' @param min_rep_per_group minimum required number of non-NA values per group
+#' @param min_groupfrac_per_iso minimum required number of non-NA groups per isotopologue
+#' @param split_by factor(s) from colData to define groups
+#' @param exclude
+#' @param na_iso.rm
+#' @param na.rm
 #' @param ...
 #'
 #' @return
 #' @export
 #'
 #' @examples
-sumMets <- function(TE, assay = "norm", max_na = 0.1, max_imp = 0.25, ...){
+sumMets <- function(TE, assay = "norm", thres_LOQ = 1.5, max_nafrac_per_met = 0.25, max_nafrac_per_group = 0.1, min_rep_per_group = 2, min_groupfrac_per_iso = 0.8, split_by = ~ 1, exclude = "internal.standard", na_iso.rm = TRUE, na.rm = TRUE, ...){
 
-  assaydata <- data.frame(TE@isoAssays[[assay]])
+  assaydata <- clean(TE, assay = assay, new_assay = NULL,
+                     thres_LOQ = thres_LOQ,
+                     max_nafrac_per_group = max_nafrac_per_group,
+                     min_rep_per_group = min_rep_per_group,
+                     split_by = split_by,
+                     exclude = exclude)
+
+  design <- TE@colData
   mets <- TE@isoData[,c("metabolite"), drop = FALSE]
 
-  sumdata <- .sumAssay(cbind(mets, assaydata), na.rm = TRUE)
+  # exclude isotopologues with too many NA-only groups
+  if (length(labels(terms(split_by))) > 0){
+    groups <- apply(design[,labels(terms(split_by)),drop = FALSE], 1, paste0,  collapse = "_")
+    stopifnot(all(names(groups) == colnames(assaydata)))
+    data_grouped <- lapply(setNames(unique(groups), unique(groups)), function(g) assaydata[,groups == g,drop = FALSE])
+  } else {
+    data_grouped <- list(assaydata)
+  }
+  data_grouped <- lapply(data_grouped, function(tmp) tmp[rownames(assaydata),])
+  assaydata_clean <- Reduce(cbind, data_grouped)
+  assaydata_clean <- assaydata_clean[rownames(assaydata), colnames(assaydata)]
+  if (!is.null(min_groupfrac_per_iso)){
+    group_na <- sapply(data_grouped, function(tmp){ rowSums(!is.na(tmp)) })
+    assaydata_clean[!rowMeans(group_na > min_rep_per_group) >= min_groupfrac_per_iso,] <- NA
+  }
+
+  # sum data
+  tmp <- data.frame(mets, assaydata_clean)
+  if (na_iso.rm == TRUE) tmp <- tmp[rowSums(!is.na(assaydata_clean)) > 0,]
+  sumdata <- .sumAssay(tmp, na.rm = na.rm)
 
   # remove metabolites with too many missing isotopologues
-  nafraction <- .sumAssay(cbind(mets, is.na(assaydata)), FUN = mean)
-  sumdata[nafraction > max_na] <- NA
+  nafraction <- .sumAssay(data.frame(tmp[,1, drop = FALSE], is.na(tmp[,-1])), FUN = mean)
+  sumdata[nafraction > max_nafrac_per_met] <- NA
 
-  # remove metabolites with too many imputed isotopologues
-  if (!is.null(TE@qcAssays$na) & !is.null(max_imp)){
-    imp <- TE@qcAssays$na
-    impfraction <- .sumAssay(cbind(mets, imp), FUN = mean)
-    sumdata[impfraction > max_imp] <- NA
-  }
 
   sumdata[unique(TE@isoData$metabolite),]
 }
@@ -247,10 +276,10 @@ sumMets <- function(TE, assay = "norm", max_na = 0.1, max_imp = 0.25, ...){
 #' @export
 #'
 #' @examples
-MID <- function(TE, assay = "norm", max_na = 0, max_imp = 0.25, remove_imp = TRUE, ...){
+MID <- function(TE, assay = "norm", new_assay = "mid", ...){
 
   data <- cbind(TE@isoAssays[[assay]], TE@isoData[,c("metabolite"), drop = FALSE])
-  sumdata <- sumMets(TE, assay = assay, max_na = max_na, max_imp = max_imp, ...)
+  sumdata <- sumMets(TE, assay = assay, ...)
   sumdata <- sumdata[data$metabolite,]
 
   data$metabolite <- NULL
@@ -260,13 +289,11 @@ MID <- function(TE, assay = "norm", max_na = 0, max_imp = 0.25, remove_imp = TRU
   fractions[is.na(data)] <- NA
   fractions[is.nan(data.matrix(data))] <- NaN
 
-  if (remove_imp == TRUE & !is.null(TE@qcAssays$na)){
-    imp <- as.matrix(TE@qcAssays$na)
-    fractions[imp] <- NA
-  }
-
   stopifnot(all.equal(dimnames(data), dimnames(fractions)))
-  fractions
+
+  if (is.null(new_assay)) return(fractions)
+  TE@isoAssays[[new_assay]] <- fractions
+  TE
 }
 
 
@@ -288,9 +315,10 @@ MID <- function(TE, assay = "norm", max_na = 0, max_imp = 0.25, remove_imp = TRU
 #' @export
 #'
 #' @examples
-isoEnrichment <- function(TE, assay = "norm", max_na = 0, max_imp = 0.25, na.rm.iso = TRUE, na.rm = FALSE, ...){
+isoEnrichment <- function(TE, assay = "mid", new_assay = "frac", na.rm = TRUE, na.rm.iso = TRUE, ...){
 
-  fractions <- MID(TE, assay = assay, max_na = max_na, max_imp = max_imp, ...)
+
+  fractions <- .getAssays(TE, type = "iso", assay = assay)
   fractions$id <- rownames(fractions)
 
   df <- data.frame(id = rownames(TE@isoData), metabolite = TE@isoData$metabolite)
@@ -307,8 +335,9 @@ isoEnrichment <- function(TE, assay = "norm", max_na = 0, max_imp = 0.25, na.rm.
 
   if (!is.null(TE@metData)) frac_enrich <- frac_enrich[rownames(TE@metData),]
 
-
-  frac_enrich
+  if (is.null(new_assay)) return(frac_enrich)
+  TE@metAssays[[new_assay]] <- frac_enrich
+  TE
 }
 
 

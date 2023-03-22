@@ -2,21 +2,34 @@
 % Please edit documentation in R/r-preprocessing-functions.R
 \name{estimateLOQs}
 \alias{estimateLOQs}
-\title{Estimate LOD/LOQ values from QC samples}
+\title{Estimate LOD and sdLOD values from QC samples}
 \usage{
 estimateLOQs(
   TE,
+  assay = "raw",
   qc = "blanks",
+  qc_LOD = "lod",
+  qc_LOQ = "loq",
   exclude = "internal.standard",
-  sdLOD = 0,
-  sdLOQ = 2,
+  sds = 1,
   FUN = NULL,
   ...
 )
 }
 \arguments{
+\item{TE}{TracerExperiment}
+
+\item{qc}{name of QC assay}
+
+\item{exclude}{metabolites without LOD}
+
+\item{FUN}{function to calculate LOD from QC assay}
+
 \item{...}{}
 }
 \description{
-Estimate LOD/LOQ values from QC samples
+Estimate LOD and sdLOD values from QC samples
+}
+\examples{
+exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs()
 }
