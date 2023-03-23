@@ -13,6 +13,7 @@ clean(
   max_nafrac_per_group = 1/3,
   min_rep_per_group = 2,
   split_by = ~1,
+  type = "iso",
   exclude = "internal.standard",
   remove_imp = FALSE,
   ...
@@ -38,7 +39,13 @@ clean(
 \item{exclude}{internal standard}
 
 \item{remove_imp}{optionally, remove all imputed values}
+
+\item{...}{}
 }
 \description{
 Cleaning of data
+}
+\examples{
+exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> clean(assay = "raw")
+exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> sumMets(assay = "raw", sum_qc = TRUE) |> clean(assay = "raw", type = "met", qc_LOQ = "met_loq_raw")
 }

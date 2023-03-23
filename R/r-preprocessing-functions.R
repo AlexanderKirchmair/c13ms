@@ -132,10 +132,16 @@ preprocessLOQs <- function(TE, assay = "raw", new_assay = "lod", thres_LOQ = 1.5
 #' @param exclude internal standard
 #' @param remove_imp optionally, remove all imputed values
 #' @param ...
-clean <- function(TE, assay = "norm", qc_LOQ = "loq", new_assay = "clean", thres_LOQ = 1.5, max_nafrac_per_group = 1/3, min_rep_per_group = 2, split_by = ~ 1, exclude = "internal.standard", remove_imp = FALSE, ...){
+#'
+#' @export
+#'
+#' @examples
+#' exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> clean(assay = "raw")
+#' exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> sumMets(assay = "raw", sum_qc = TRUE) |> clean(assay = "raw", type = "met", qc_LOQ = "met_loq_raw")
+clean <- function(TE, assay = "norm", qc_LOQ = "loq", new_assay = "clean", thres_LOQ = 1.5, max_nafrac_per_group = 1/3, min_rep_per_group = 2, split_by = ~ 1, type = "iso", exclude = "internal.standard", remove_imp = FALSE, ...){
 
   if (is.null(assay)) assay <- .getAssays(TE, assay = assay, last = TRUE, names_only = TRUE, type = type)
-  data <- TE@isoAssays[[assay]]
+  data <- assay(TE, assay, type = type)
   design <- TE@colData
   if (is.null(data)) stop("Error: Data not found!")
 
@@ -190,7 +196,7 @@ clean <- function(TE, assay = "norm", qc_LOQ = "loq", new_assay = "clean", thres
 
   if (is.null(new_assay)) return(data_clean)
 
-  TE@isoAssays[[new_assay]] <- data_clean
+  assay(TE, new_assay, type = type) <- data_clean
   TE
 
 }

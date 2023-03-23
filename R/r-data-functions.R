@@ -220,14 +220,24 @@ metnames <- function(x, ...){
 #' @export
 #'
 #' @examples
-sumMets <- function(TE, assay = "norm", thres_LOQ = 1.5, max_nafrac_per_met = 0.25, max_nafrac_per_group = 0.1, min_rep_per_group = 2, min_groupfrac_per_iso = 0.8, split_by = ~ 1, exclude = "internal.standard", na_iso.rm = TRUE, na.rm = TRUE, ...){
+#' exampleTracerExperiment() |> sumMets(assay = "raw", qc_LOQ = NULL)
+#' exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> preprocessLOQs() |> sumMets(assay = "lod", sum_qc = TRUE)
+sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ = "loq", max_nafrac_per_met = 0.25, max_nafrac_per_group = 0.1, min_rep_per_group = 2, min_groupfrac_per_iso = 0.8, split_by = ~ 1, exclude = "internal.standard", sum_qc = FALSE, na_iso.rm = TRUE, na.rm = TRUE, ...){
 
-  assaydata <- clean(TE, assay = assay, new_assay = NULL,
-                     thres_LOQ = thres_LOQ,
-                     max_nafrac_per_group = max_nafrac_per_group,
-                     min_rep_per_group = min_rep_per_group,
-                     split_by = split_by,
-                     exclude = exclude)
+  if (!is.null(qc_LOQ)){
+    assaydata <- clean(TE, assay = assay, new_assay = NULL,
+                       qc_LOQ = qc_LOQ,
+                       thres_LOQ = thres_LOQ,
+                       max_nafrac_per_group = max_nafrac_per_group,
+                       min_rep_per_group = min_rep_per_group,
+                       split_by = split_by,
+                       exclude = exclude)
+  } else {
+    assaydata <- .getAssays(TE, assay = assay)
+  }
+
+
+  if (new_assay == ""){ new_assay <- assay}
 
   design <- TE@colData
   mets <- TE@isoData[,c("metabolite"), drop = FALSE]
@@ -257,8 +267,31 @@ sumMets <- function(TE, assay = "norm", thres_LOQ = 1.5, max_nafrac_per_met = 0.
   nafraction <- .sumAssay(data.frame(tmp[,1, drop = FALSE], is.na(tmp[,-1])), FUN = mean)
   sumdata[nafraction > max_nafrac_per_met] <- NA
 
+  # set metabolite order
+  mets_uni <- unique(mets[,1])
+  if (all(mets_uni %in% rownames(TE@metData))) mets_uni <- rownames(TE@metData)
+  sumdata <- sumdata[mets_uni,]
+  rownames(sumdata) <- mets_uni
 
-  sumdata[unique(TE@isoData$metabolite),]
+  if (is.null(new_assay)) return(sumdata)
+
+  # combine LOQ values
+  if (sum_qc == TRUE & !is.null(qc_LOQ)){
+    LOQ <- .getAssays(TE, assay = qc_LOQ, type = "qc")
+    LOQ <- LOQ[rownames(assaydata_clean), colnames(assaydata_clean)]
+    LOQ[is.na(assaydata_clean)] <- NA
+    tmp_loq <- data.frame(mets, LOQ)
+    tmp_loq <- tmp_loq[rownames(tmp),]
+    sumloq <- .sumAssay(tmp_loq, na.rm = TRUE, FUN = mean)
+    sumloq <- sumloq[mets_uni,]
+    rownames(sumloq) <- mets_uni
+
+    TE@qcAssays[[paste0("met_loq_", new_assay)]] <- sumloq
+  }
+
+
+  TE@metAssays[[new_assay]] <- sumdata
+  TE
 }
 
 

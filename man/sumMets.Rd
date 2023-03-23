@@ -7,13 +7,16 @@
 sumMets(
   TE,
   assay = "norm",
+  new_assay = "",
   thres_LOQ = 1.5,
+  qc_LOQ = "loq",
   max_nafrac_per_met = 0.25,
   max_nafrac_per_group = 0.1,
   min_rep_per_group = 2,
   min_groupfrac_per_iso = 0.8,
   split_by = ~1,
   exclude = "internal.standard",
+  sum_qc = FALSE,
   na_iso.rm = TRUE,
   na.rm = TRUE,
   ...
@@ -40,4 +43,8 @@ sumMets(
 }
 \description{
 Summarize isotopologues to metabolites
+}
+\examples{
+exampleTracerExperiment() |> sumMets(assay = "raw", qc_LOQ = NULL)
+exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> preprocessLOQs() |> sumMets(assay = "lod", sum_qc = TRUE)
 }

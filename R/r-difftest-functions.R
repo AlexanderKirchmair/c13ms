@@ -30,7 +30,20 @@ diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "is
   ### Input ----
 
   design <- TE@colData
+
+
   data <- c13ms:::.getAssays(TE, assay = assay, type = type)
+
+
+  ### Pre-filtering ----
+  # fterms <- labels(terms(formula)) |> sub(pattern = " ", replacement = "") |> sub(pattern = "1|", replacement = "", fixed = TRUE) |> trimws()
+  # if (length(fterms) > 0){
+  #   split_by <- as.formula(paste0("~", paste(fterms, collapse = " + ")))
+  # } else {
+  #   split_by <- ~1
+  # }
+  #
+  # data <- clean(TE, assay = assay, type = type, qc_LOQ = qc_LOQ, thres_LOQ = thres_LOQ, min_rep_per_group = 0, split_by = split_by)
 
 
   ### Call method functions ----
@@ -60,42 +73,44 @@ diffTest <- function(TE, contrasts, formula = NULL, method = "ttest", type = "is
   })
 
 
-  ### Add conf values ---
-  if (conf == TRUE & !is.null(TE@qcAssays$conf)){
-
-    results <- lapply(results, function(res){
-      lapply(setNames(names(res), names(res)), function(tmpcontr){
-
-        tmpres <- res[[tmpcontr]]
-        samples <- getContrastSamples(design, contrasts[[tmpcontr]])
-        confdata <- data.matrix(TE@qcAssays$conf)
-
-        if (type == "iso"){
-          confdata[is.na(data.matrix(data))] <- NA
-
-        } else {
-          tmp <- .getAssays(TE, assay = assay_ref, type = "iso")
-          confdata[is.na(data.matrix(tmp))] <- NA
-          confdata <- data.frame(confdata)
-        }
-
-        if (type == "met"){
-          confdata$metabolite <- TE@isoData$metabolite
-          confdata <- .sumAssay(confdata, FUN = min, na.rm = TRUE)
-        }
-
-        groups <- unique(samples)
-        g1 <- rowMeans(data.matrix(confdata[,names(samples)[samples == groups[1]]]))
-        g2 <- rowMeans(data.matrix(confdata[,names(samples)[samples == groups[2]]]))
-        conf <- matrixStats::rowMaxs(cbind(g1, g2), na.rm = TRUE)
-        conf <- setNames(conf, rownames(confdata))
-        tmpres$conf <- conf[rownames(tmpres)]
-        tmpres
-      })
-    })
 
 
-  }
+  # ### Add conf values ---
+  # if (conf == TRUE & !is.null(TE@qcAssays$conf)){
+  #
+  #   results <- lapply(results, function(res){
+  #     lapply(setNames(names(res), names(res)), function(tmpcontr){
+  #
+  #       tmpres <- res[[tmpcontr]]
+  #       samples <- getContrastSamples(design, contrasts[[tmpcontr]])
+  #       confdata <- data.matrix(TE@qcAssays$conf)
+  #
+  #       if (type == "iso"){
+  #         confdata[is.na(data.matrix(data))] <- NA
+  #
+  #       } else {
+  #         tmp <- .getAssays(TE, assay = assay_ref, type = "iso")
+  #         confdata[is.na(data.matrix(tmp))] <- NA
+  #         confdata <- data.frame(confdata)
+  #       }
+  #
+  #       if (type == "met"){
+  #         confdata$metabolite <- TE@isoData$metabolite
+  #         confdata <- .sumAssay(confdata, FUN = min, na.rm = TRUE)
+  #       }
+  #
+  #       groups <- unique(samples)
+  #       g1 <- rowMeans(data.matrix(confdata[,names(samples)[samples == groups[1]]]))
+  #       g2 <- rowMeans(data.matrix(confdata[,names(samples)[samples == groups[2]]]))
+  #       conf <- matrixStats::rowMaxs(cbind(g1, g2), na.rm = TRUE)
+  #       conf <- setNames(conf, rownames(confdata))
+  #       tmpres$conf <- conf[rownames(tmpres)]
+  #       tmpres
+  #     })
+  #   })
+  #
+  #
+  # }
 
 
 
@@ -245,7 +260,7 @@ getContrastSamples <- function(design, contrast, paired = NULL){
 testTTEST <- function(data, design, formula = NULL, contrasts, logged = FALSE, var.equal = FALSE, p.adj.method = "fdr", paired = FALSE, FUN = NULL,  ...){
 
   if (paired == TRUE) message("Warning: Paired t-test requires matching non-NA samples .")
-  if (paired == TRUE & !is.null(formula))  paired <- labels(terms(formula))
+  if (paired == TRUE & !is.null(formula)) paired <- labels(terms(formula))
 
   if (logged == FALSE){
     data <- .logtrans(data, FUN = FUN)
@@ -577,9 +592,8 @@ testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FA
       # print(lmecontrasts)
       cmat <- lapply(lmecontrasts[[1]], function(x) trimws(strsplit(gsub("=.*", "", x), split = " - ")[[1]]) )
       # lapply(lmecontrasts, function(x) sapply(x, function(xx) trimws(strsplit(gsub("=.*", "", xx), split = " - ")[[1]]) ))
-      # print(cmat)
+
       cmat <- sapply(seq_along(cmat), function(i) paste0(names(cmat)[i], cmat[[i]]) )
-      # print(cmat)
 
       # lfcs <- log2(lmefit$coefficients$fixed[cmat[1,]] / lmefit$coefficients$fixed[cmat[2,]])
       # dfres$lfc <- as.numeric(lfcs)
