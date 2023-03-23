@@ -25,6 +25,7 @@ metabolite annotations, sample annotations and other metadata.
 Here are some basic functionalities:
 
 ``` r
+
 C13 <- exampleTracerExperiment(nsamples = 6, nmets = 5)
 
 isoData(C13)
@@ -44,7 +45,7 @@ C13groups <- split(C13, by = ~ group)
 C13 <- with(C13groups, A + B)
 
 assay(C13, "raw")
-sumMets(C13, assay = "raw")
+sumMets(C13, assay = "raw", qc_LOQ = NULL)
 ```
 
 ## Workflow
@@ -55,36 +56,38 @@ Pre-processing (imputation, natural isotope abundance correction,
 normalization, …):
 
 ``` r
-C13 %<>% impute(assay = "raw")
+
+C13 %<>% impute(assay = "raw", na = NULL)
 C13 %<>% correctIso(assay = "imp")
-C13 %<>% normalize(method = ~ COLSUM, assay = "corr")
+#C13 %<>% normalize(method = ~ COLSUM, assay = "corr", qc_LOQ = NULL)
 ```
 
 Calculation of relative mass isotopomer distributions (MID), fractional
 enrichment and summarization of isotopologues to metabolite levels:
 
 ``` r
-assay(C13, "mid") <- MID(C13)
-assay(C13, "frac", type = "met") <- isoEnrichment(C13)
-assay(C13, "norm", type = "met") <- sumMets(C13)
+
+#C13 %<>% MID()
+#C13 %<>% isoEnrichment()
+#C13 %<>% sumMets()
 ```
 
 Statistical testing for differences in abundances and labelling:
 
 ``` r
+
 contrasts <- list(groupBvsA = list("group" = c("B", "A")))
-
-C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", assay = "norm", method = "ttest")
-C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", assay = "frac", method = "beta")
-C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "iso",  assay = "mid", method = "beta")
-
-results(C13, "iso", "mid", "beta") %>% head(10)
+# 
+# C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", assay = "norm", method = "ttest")
+# C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", assay = "frac", method = "beta")
+# C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "iso",  assay = "mid", method = "beta")
+# 
+# results(C13, "iso", "mid", "beta") %>% head(10)
 ```
 
 ## Visualization
 
 ``` r
-isoplot(C13, mets = metnames(C13)[1], cumulative = T)
-```
 
-<img src="man/figures/README-unnamed-chunk-7-1.svg" width="100%" />
+# isoplot(C13, mets = metnames(C13)[1], cumulative = T)
+```

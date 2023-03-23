@@ -145,9 +145,10 @@ clean <- function(TE, assay = "norm", qc_LOQ = "loq", new_assay = "clean", thres
   design <- TE@colData
   if (is.null(data)) stop("Error: Data not found!")
 
-  LOQ <- .getAssays(TE, assay = qc_LOQ, type = "qc")
-  stopifnot(all.equal(dim(data), dim(LOQ)))
-
+  if (!is.null(qc_LOQ)){
+    LOQ <- .getAssays(TE, assay = qc_LOQ, type = "qc")
+    stopifnot(all.equal(dim(data), dim(LOQ)))
+  }
 
   exclude <- intersect(exclude, rownames(data))
   if (length(exclude) == 0) exclude <- NULL
@@ -160,7 +161,9 @@ clean <- function(TE, assay = "norm", qc_LOQ = "loq", new_assay = "clean", thres
   }
 
   # Set values below LOQ to NA
-  data[LOQ < thres_LOQ] <- NA
+  if (!is.null(qc_LOQ)){
+    data[LOQ < thres_LOQ] <- NA
+  }
 
 
   # Split into groups
