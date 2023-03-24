@@ -75,7 +75,7 @@ A typical analysis workflow may look like as demonstrated below.
 Pre-processing (imputation, natural isotope abundance correction, normalization, ...): 
 ```{r, results='hide', message=FALSE, warning=FALSE}
 
-C13 %<>% impute(assay = "raw")
+C13 %<>% impute(assay = "raw", nan = 0, na = NULL)
 C13 %<>% correctIso(assay = "imp")
 C13 %<>% normalize(method = ~ COLSUM, assay = "corr")
 
@@ -85,9 +85,9 @@ C13 %<>% normalize(method = ~ COLSUM, assay = "corr")
 Calculation of relative mass isotopomer distributions (MID), fractional enrichment and summarization of isotopologues to metabolite levels:
 ```{r, results='hide', message=FALSE, warning=FALSE}
 
-assay(C13, "mid") <- MID(C13)
-assay(C13, "frac", type = "met") <- isoEnrichment(C13)
-assay(C13, "norm", type = "met") <- sumMets(C13)
+C13 %<>% MID()
+C13 %<>% isoEnrichment()
+C13 %<>% sumMets()
 
 ```
 

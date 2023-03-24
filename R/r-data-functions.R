@@ -222,25 +222,27 @@ metnames <- function(x, ...){
 #' @examples
 #' exampleTracerExperiment() |> sumMets(assay = "raw", qc_LOQ = NULL)
 #' exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> preprocessLOQs() |> sumMets(assay = "lod", sum_qc = TRUE)
-sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ = "loq", max_nafrac_per_met = 0.25, max_nafrac_per_group = 0.1, min_rep_per_group = 2, min_groupfrac_per_iso = 0.8, split_by = ~ 1, exclude = "internal.standard", sum_qc = FALSE, na_iso.rm = TRUE, na.rm = TRUE, ...){
+sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ = "loq", max_nafrac_per_met = 0.25, max_nafrac_per_group = 0.1, min_rep_per_group = 2, min_groupfrac_per_iso = 0.8, split_by = ~ 1, exclude = "internal.standard", sum_qc = NULL, na_iso.rm = TRUE, na.rm = TRUE, ...){
 
-  if (!is.null(qc_LOQ)){
-    assaydata <- clean(TE, assay = assay, new_assay = NULL,
-                       qc_LOQ = qc_LOQ,
-                       thres_LOQ = thres_LOQ,
-                       max_nafrac_per_group = max_nafrac_per_group,
-                       min_rep_per_group = min_rep_per_group,
-                       split_by = split_by,
-                       exclude = exclude)
-  } else {
-    assaydata <- .getAssays(TE, assay = assay)
+  if (!is.null(new_assay)){ if (new_assay == ""){ new_assay <- assay} }
+  design <- TE@colData
+  mets <- TE@isoData[,c("metabolite"), drop = FALSE]
+
+  if (is.null(sum_qc)){sum_qc <- !is.null(qc_LOQ) }
+  if (!qc_LOQ %in% names(TE@qcAssays)){
+    qc_LOQ <- NULL
+  .colorcat("Warning: No QC assay found.")
   }
 
 
-  if (new_assay == ""){ new_assay <- assay}
-
-  design <- TE@colData
-  mets <- TE@isoData[,c("metabolite"), drop = FALSE]
+  assaydata <- clean(TE, assay = assay,
+                     new_assay = NULL,
+                     qc_LOQ = qc_LOQ,
+                     thres_LOQ = thres_LOQ,
+                     max_nafrac_per_group = max_nafrac_per_group,
+                     min_rep_per_group = min_rep_per_group,
+                     split_by = split_by,
+                     exclude = exclude)
 
   # exclude isotopologues with too many NA-only groups
   if (length(labels(terms(split_by))) > 0){
@@ -309,10 +311,16 @@ sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ 
 #' @export
 #'
 #' @examples
-MID <- function(TE, assay = "norm", new_assay = "mid", ...){
+MID <- function(TE, assay = "norm", metAssay = NULL, new_assay = "mid", ...){
 
   data <- cbind(TE@isoAssays[[assay]], TE@isoData[,c("metabolite"), drop = FALSE])
-  sumdata <- sumMets(TE, assay = assay, ...)
+
+  if (is.null(metAssay)){
+    sumdata <- sumMets(TE, assay = assay, new_assay = NULL, ...)
+  } else {
+    sumdata <- .getAssays(TE, type = "met", assay = metAssay)
+  }
+
   sumdata <- sumdata[data$metabolite,]
 
   data$metabolite <- NULL

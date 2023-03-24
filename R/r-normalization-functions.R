@@ -24,7 +24,7 @@ normalizeIsoAssay <- function(isoAssay, method = ~ COLSUM, isodata = NULL, metAs
   ### Function for data normalization
 
   # Provide custom functions in ellipsis:
-  # e.g. normalizeTE(data, method = ~ IS + SUMFUN, SUMFUN = function(x){x/sum(x, na.rm = TRUE)})
+  # e.g. normalizeIsoAssay(data, method = ~ IS + SUMFUN, SUMFUN = function(x){x/sum(x, na.rm = TRUE)})
 
 
   ### INPUT ----
@@ -41,7 +41,7 @@ normalizeIsoAssay <- function(isoAssay, method = ~ COLSUM, isodata = NULL, metAs
   }
 
   methods <- strsplit(sub("~", "", deparse(method)), split = " + ", fixed = T)[[1]]
-  methods.local <- methods[methods %in% c("COLSUM", "ISOSUM", "LOG", "IS", "COLMEDIAN", "HKM", "ROWMEAN", "ROWMEDIAN", "TMM", "LEVEL", "AUTO", "SCALE", "VMN", "VSN")]
+  methods.local <- methods[methods %in% c("COLSUM", "IMPSUM", "LOG", "IS", "COLMEDIAN", "HKM", "ROWMEAN", "ROWMEDIAN", "TMM", "LEVEL", "AUTO", "SCALE", "VMN", "VSN")]
   methods.colData <- methods[!methods %in% methods.local & methods %in% colnames(colData)]
   methods.functions <- methods[!methods %in% methods.local & !methods %in% colnames(colData) & methods %in% names(FUNs)]
 
@@ -52,7 +52,7 @@ normalizeIsoAssay <- function(isoAssay, method = ~ COLSUM, isodata = NULL, metAs
 
       # normalization factors from sample data
       if (!quiet) .colorcat(c("Normalization using", m))
-      data <- normColData(data, colData[,m])
+      data <- .normColData(data, colData[,m])
 
     } else if (m %in% methods.local){
       # apply locally defined functions
@@ -100,7 +100,7 @@ normalizeIsoAssay <- function(isoAssay, method = ~ COLSUM, isodata = NULL, metAs
 
 
 
-.normISOSUM <- function(data, isodata, FUN = colSums, ...){
+.normIMPSUM <- function(data, isodata, FUN = colSums, ...){
 
   # Select consistently measured metabolites
   tmp <- data.frame(!is.na(data))
@@ -127,7 +127,6 @@ normalizeIsoAssay <- function(isoAssay, method = ~ COLSUM, isodata = NULL, metAs
 
   sumdata <- data.matrix(.sumAssay(imp))
   sizefactors <- FUN(sumdata)
-
 
   data$metabolite <- NULL
   normdata <- t( t(data)/ sizefactors )
@@ -236,8 +235,6 @@ normalizeIsoAssay <- function(isoAssay, method = ~ COLSUM, isodata = NULL, metAs
   fractions[rownames(isodata),] * fitdata[isodata$metabolite,]
 
 }
-
-
 
 
 .normVMN <- function(data, fractions, coldata, isodata, group, ...){

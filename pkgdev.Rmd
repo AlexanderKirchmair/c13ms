@@ -136,24 +136,6 @@ devtools::build_readme()
 ```
 
 
-
-
-```{r}
-load_all()
-TE <- exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> preprocessLOQs() |> impute(nan = 0, na = "linsubLODs") |> normalize(assay = "imp", method = ~ COLSUM)
-TE <- clean(TE, max_nafrac_per_group = NULL)
-TE@isoAssays$clean
-sumMets(TE, assay = "clean", thres_LOQ = 1, max_nafrac_per_met = 0.5, max_nafrac_per_group = 1, min_rep_per_group = 1, min_groupfrac_per_iso = 0)
-
-TE<-MID(TE)
-MID(TE, assay = "clean")
-isoEnrichment(TE, new_assay = NULL)
-
-```
-
-
-
-
 Install the package
 ```{r}
 

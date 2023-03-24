@@ -18,7 +18,7 @@ exampleTracerExperiment <- function(nsamples = 10, nmets = 10, seed = 123, add_q
   formulas <- replicate(nmets, rmolecule())
   stopifnot(sum(grepl("O0", formulas)) == 0)
 
-  metData <- data.frame(row.names = mets, Molecule = formulas, MSion = NA)
+  metData <- data.frame(row.names = mets, Molecule = formulas, MSion = NA_character_)
   colData <- data.frame(row.names = samples, name = samples, group = sub("\\d", "", samples))
 
   nC <- as.numeric(sub("C", "", regmatches(formulas, regexpr("C[0-9]+", formulas))))

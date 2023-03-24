@@ -367,6 +367,7 @@ setMethod(f = "normalize", signature = "TracerExperiment", definition = function
   if (is.null(metassay)){
     message("Calculating metabolite sums using 'sumMets()'...")
     metsums <- sumMets(object, assay,
+                       new_assay = NULL,
                        thres_LOQ = thres_LOQ,
                        max_nafrac_per_met = 0.9,
                        max_nafrac_per_group = 1,
@@ -380,7 +381,7 @@ setMethod(f = "normalize", signature = "TracerExperiment", definition = function
   object@isoAssays$norm <- normalizeIsoAssay(isoAssay = object@isoAssays[[assay]],
                                              metAssay = metsums,
                                              isodata = object@isoData,
-                                             fractions = MID(object, assay = assay),
+                                             fractions = MID(object, assay = assay, new_assay = NULL),
                                              colData = object@colData,
                                              method = method, ...)
   object

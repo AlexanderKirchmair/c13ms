@@ -25,6 +25,7 @@ metabolite annotations, sample annotations and other metadata.
 Here are some basic functionalities:
 
 ``` r
+
 C13 <- exampleTracerExperiment(nsamples = 6, nmets = 5)
 
 isoData(C13)
@@ -55,7 +56,8 @@ Pre-processing (imputation, natural isotope abundance correction,
 normalization, …):
 
 ``` r
-C13 %<>% impute(assay = "raw")
+
+C13 %<>% impute(assay = "raw", nan = 0, na = NULL)
 C13 %<>% correctIso(assay = "imp")
 C13 %<>% normalize(method = ~ COLSUM, assay = "corr")
 ```
@@ -64,14 +66,16 @@ Calculation of relative mass isotopomer distributions (MID), fractional
 enrichment and summarization of isotopologues to metabolite levels:
 
 ``` r
-assay(C13, "mid") <- MID(C13)
-assay(C13, "frac", type = "met") <- isoEnrichment(C13)
-assay(C13, "norm", type = "met") <- sumMets(C13)
+
+C13 %<>% MID()
+C13 %<>% isoEnrichment()
+C13 %<>% sumMets()
 ```
 
 Statistical testing for differences in abundances and labelling:
 
 ``` r
+
 contrasts <- list(groupBvsA = list("group" = c("B", "A")))
 
 C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", assay = "norm", method = "ttest")
@@ -84,6 +88,7 @@ results(C13, "iso", "mid", "beta") %>% head(10)
 ## Visualization
 
 ``` r
+
 isoplot(C13, mets = metnames(C13)[1], cumulative = T)
 ```
 
