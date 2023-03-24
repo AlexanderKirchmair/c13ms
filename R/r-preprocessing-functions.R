@@ -199,9 +199,11 @@ clean <- function(TE, assay = "norm", qc_LOQ = "loq", new_assay = "clean", thres
   data_clean <- data_clean[rownames(data), colnames(data)]
 
   if (soft == TRUE){
-    set_na <- is.nan(data_clean)
+    set_na <- is.nan(data.matrix(data_clean))
     data.orig[set_na] <- NA
     data_clean <- data.orig
+  } else {
+    data_clean[is.na(data_clean)] <- NA
   }
 
   data_clean[is.nan(data.matrix(data.orig))] <- NaN
