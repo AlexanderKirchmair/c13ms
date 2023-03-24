@@ -231,11 +231,12 @@ sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ 
   mets <- TE@isoData[,c("metabolite"), drop = FALSE]
 
   if (is.null(sum_qc)){sum_qc <- !is.null(qc_LOQ) }
-  if (!qc_LOQ %in% names(TE@qcAssays)){
-    qc_LOQ <- NULL
-  .colorcat("Warning: No QC assay found.")
+  if (!is.null(qc_LOQ)){
+    if (!qc_LOQ %in% names(TE@qcAssays)){
+      qc_LOQ <- NULL
+      .colorcat("Warning: No QC assay found.")
+    }
   }
-
 
   assaydata <- clean(TE, assay = assay,
                      new_assay = NULL,

@@ -61,7 +61,7 @@ C13groups <- split(C13, by = ~ group)
 C13 <- with(C13groups, A + B)
 
 assay(C13, "raw")
-sumMets(C13, assay = "raw", qc_LOQ = NULL)
+sumMets(C13, assay = "raw")
 
 ```
 

@@ -16,7 +16,7 @@ sumMets(
   min_groupfrac_per_iso = 0.8,
   split_by = ~1,
   exclude = "internal.standard",
-  sum_qc = FALSE,
+  sum_qc = NULL,
   na_iso.rm = TRUE,
   na.rm = TRUE,
   ...

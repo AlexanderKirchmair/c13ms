@@ -45,7 +45,7 @@ C13groups <- split(C13, by = ~ group)
 C13 <- with(C13groups, A + B)
 
 assay(C13, "raw")
-sumMets(C13, assay = "raw", qc_LOQ = NULL)
+sumMets(C13, assay = "raw")
 ```
 
 ## Workflow
@@ -57,13 +57,9 @@ normalization, …):
 
 ``` r
 
-<<<<<<< HEAD
 C13 %<>% impute(assay = "raw", nan = 0, na = NULL)
-=======
-C13 %<>% impute(assay = "raw", na = NULL)
->>>>>>> 19ca8c706d846aa64a29e96e453a906259460bb5
 C13 %<>% correctIso(assay = "imp")
-#C13 %<>% normalize(method = ~ COLSUM, assay = "corr", qc_LOQ = NULL)
+C13 %<>% normalize(method = ~ COLSUM, assay = "corr")
 ```
 
 Calculation of relative mass isotopomer distributions (MID), fractional
@@ -71,15 +67,9 @@ enrichment and summarization of isotopologues to metabolite levels:
 
 ``` r
 
-<<<<<<< HEAD
 C13 %<>% MID()
 C13 %<>% isoEnrichment()
 C13 %<>% sumMets()
-=======
-#C13 %<>% MID()
-#C13 %<>% isoEnrichment()
-#C13 %<>% sumMets()
->>>>>>> 19ca8c706d846aa64a29e96e453a906259460bb5
 ```
 
 Statistical testing for differences in abundances and labelling:
@@ -87,23 +77,19 @@ Statistical testing for differences in abundances and labelling:
 ``` r
 
 contrasts <- list(groupBvsA = list("group" = c("B", "A")))
-# 
-# C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", assay = "norm", method = "ttest")
-# C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", assay = "frac", method = "beta")
-# C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "iso",  assay = "mid", method = "beta")
-# 
-# results(C13, "iso", "mid", "beta") %>% head(10)
+
+C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", assay = "norm", method = "ttest")
+C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "met", assay = "frac", method = "beta")
+C13 %<>% diffTest(contrasts = contrasts, formula = ~ group, type = "iso",  assay = "mid", method = "beta")
+
+results(C13, "iso", "mid", "beta") %>% head(10)
 ```
 
 ## Visualization
 
 ``` r
-<<<<<<< HEAD
 
 isoplot(C13, mets = metnames(C13)[1], cumulative = T)
 ```
-=======
->>>>>>> 19ca8c706d846aa64a29e96e453a906259460bb5
 
-# isoplot(C13, mets = metnames(C13)[1], cumulative = T)
-```
+<img src="man/figures/README-unnamed-chunk-7-1.svg" width="100%" />
