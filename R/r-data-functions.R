@@ -321,16 +321,12 @@ sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ 
 #' @export
 #'
 #' @examples
-MID <- function(TE, assay = "norm", metAssay = NULL, new_assay = "mid", ...){
+#' exampleTracerExperiment() |> MID(assay = "raw") |> sumMets(assay = "mid", new_assay = NULL)
+MID <- function(TE, assay = "norm", new_assay = "mid", ...){
 
   data <- cbind(TE@isoAssays[[assay]], TE@isoData[,c("metabolite"), drop = FALSE])
 
-  if (is.null(metAssay)){
-    sumdata <- sumMets(TE, assay = assay, new_assay = NULL, na_iso.rm = FALSE, ...)
-  } else {
-    sumdata <- .getAssays(TE, type = "met", assay = metAssay)
-  }
-
+  sumdata <- c13ms:::.sumAssay(data, na.rm = TRUE)
   sumdata <- sumdata[data$metabolite,]
 
   data$metabolite <- NULL
