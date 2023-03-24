@@ -326,7 +326,7 @@ MID <- function(TE, assay = "norm", metAssay = NULL, new_assay = "mid", ...){
   data <- cbind(TE@isoAssays[[assay]], TE@isoData[,c("metabolite"), drop = FALSE])
 
   if (is.null(metAssay)){
-    sumdata <- sumMets(TE, assay = assay, new_assay = NULL, ...)
+    sumdata <- sumMets(TE, assay = assay, new_assay = NULL, na_iso.rm = FALSE, ...)
   } else {
     sumdata <- .getAssays(TE, type = "met", assay = metAssay)
   }
@@ -336,6 +336,7 @@ MID <- function(TE, assay = "norm", metAssay = NULL, new_assay = "mid", ...){
   data$metabolite <- NULL
   fractions <- data / sumdata
 
+  fractions[.naf(sumdata == 0)] <- 0
   fractions[.naf(data == 0)] <- 0
   fractions[is.na(data)] <- NA
   fractions[is.nan(data.matrix(data))] <- NaN
