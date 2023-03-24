@@ -224,7 +224,7 @@ metnames <- function(x, ...){
 #' @examples
 #' exampleTracerExperiment() |> sumMets(assay = "raw", qc_LOQ = NULL)
 #' exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> preprocessLOQs() |> sumMets(assay = "lod", sum_qc = TRUE)
-sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ = "loq", max_nafrac_per_met = 0.25, max_nafrac_per_group = 0.1, min_rep_per_group = 2, min_groupfrac_per_iso = 0.8, split_by = ~ 1, exclude = "internal.standard", sum_qc = NULL, na_iso.rm = TRUE, na.rm = TRUE, ...){
+sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ = "loq", max_nafrac_per_met = 0.25, max_nafrac_per_group = 0.1, min_rep_per_group = 2, min_groupfrac_per_iso = 0.8, split_by = ~ 1, exclude = "internal.standard", sum_qc = NULL, qc_max = 10, na_iso.rm = TRUE, na.rm = TRUE, ...){
 
   if (!is.null(new_assay)){ if (new_assay == ""){ new_assay <- assay} }
   design <- TE@colData
@@ -285,6 +285,7 @@ sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ 
     LOQ <- .getAssays(TE, assay = qc_LOQ, type = "qc")
     LOQ <- LOQ[rownames(assaydata_clean), colnames(assaydata_clean)]
     LOQ[is.na(assaydata_clean)] <- NA
+    if (!is.null(qc_max)) LOQ[.naf(LOQ > qc_max)] <- qc_max
     tmp_loq <- data.frame(mets, LOQ)
     tmp_loq <- tmp_loq[rownames(tmp),]
     sumloq <- .sumAssay(tmp_loq, na.rm = TRUE, FUN = mean)
