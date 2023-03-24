@@ -301,7 +301,7 @@ sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ 
     TE@qcAssays[[paste0("met_loq_", new_assay)]] <- sumloq
   }
 
-
+  TE@isoAssays[["clean_mid"]] <- assaydata_clean
   TE@metAssays[[new_assay]] <- sumdata
   TE
 }
@@ -381,6 +381,7 @@ isoEnrichment <- function(TE, assay = "mid", new_assay = "frac", na.rm = TRUE, n
     colSums(tmp[,-(1:2)] * w, na.rm = na.rm)
   }))
 
+  frac_enrich <- data.frame(frac_enrich)
   if (!is.null(TE@metData)) frac_enrich <- frac_enrich[rownames(TE@metData),]
 
   if (is.null(new_assay)) return(frac_enrich)
