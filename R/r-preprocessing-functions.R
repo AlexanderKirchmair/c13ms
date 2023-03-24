@@ -138,7 +138,9 @@ preprocessLOQs <- function(TE, assay = "raw", new_assay = "lod", thres_LOQ = 1.5
 #' @examples
 #' exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> clean(assay = "raw")
 #' exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> sumMets(assay = "raw", sum_qc = TRUE) |> clean(assay = "raw", type = "met", qc_LOQ = "met_loq_raw")
-clean <- function(TE, assay = "norm", qc_LOQ = "loq", new_assay = "clean", thres_LOQ = 1.5, max_nafrac_per_group = 1/3, min_rep_per_group = 2, split_by = ~ 1, type = "iso", exclude = "internal.standard", soft = FALSE, remove_imp = FALSE, ...){
+clean <- function(TE, assay = "norm", qc_LOQ = "loq", new_assay = "clean", thres_LOQ = 1.5, max_nafrac_per_group = 1/3, min_rep_per_group = 2, split_by = ~ 1, type = "iso", exclude = "internal.standard", soft = NULL, remove_imp = FALSE, ...){
+
+  if (is.null(soft)){ soft <- !is.null(thres_LOQ) }
 
   if (is.null(assay)) assay <- .getAssays(TE, assay = assay, last = TRUE, names_only = TRUE, type = type)
   data <- assay(TE, assay, type = type)

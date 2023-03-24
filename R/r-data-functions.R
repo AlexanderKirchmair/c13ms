@@ -216,6 +216,11 @@ metnames <- function(x, ...){
 #' @param exclude
 #' @param na_iso.rm
 #' @param na.rm
+#' @param new_assay
+#' @param qc_LOQ
+#' @param sum_qc
+#' @param qc_max
+#' @param soft temporarily set values below thres_LOQ to NA
 #' @param ...
 #'
 #' @return
@@ -224,7 +229,7 @@ metnames <- function(x, ...){
 #' @examples
 #' exampleTracerExperiment() |> sumMets(assay = "raw", qc_LOQ = NULL)
 #' exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> preprocessLOQs() |> sumMets(assay = "lod", sum_qc = TRUE)
-sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ = "loq", max_nafrac_per_met = 0.25, max_nafrac_per_group = 0.1, min_rep_per_group = 2, min_groupfrac_per_iso = 0.8, split_by = ~ 1, exclude = "internal.standard", sum_qc = NULL, qc_max = 10, na_iso.rm = TRUE, na.rm = TRUE, ...){
+sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ = "loq", max_nafrac_per_met = 0.25, max_nafrac_per_group = 0.1, min_rep_per_group = 2, min_groupfrac_per_iso = 0.8, split_by = ~ 1, exclude = "internal.standard", sum_qc = NULL, qc_max = 10, soft = NULL, na_iso.rm = TRUE, na.rm = TRUE, ...){
 
   if (!is.null(new_assay)){ if (new_assay == ""){ new_assay <- assay} }
   design <- TE@colData
@@ -245,7 +250,8 @@ sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ 
                      max_nafrac_per_group = max_nafrac_per_group,
                      min_rep_per_group = min_rep_per_group,
                      split_by = split_by,
-                     exclude = exclude)
+                     exclude = exclude,
+                     soft = soft)
 
   # exclude isotopologues with too many NA-only groups
   if (length(labels(terms(split_by))) > 0){
@@ -266,7 +272,7 @@ sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ 
   # sum data
   tmp <- data.frame(mets, assaydata_clean)
   if (na_iso.rm == TRUE) tmp <- tmp[rowSums(!is.na(assaydata_clean)) > 0,]
-  sumdata <- .sumAssay(tmp, na.rm = na.rm)
+  sumdata <- .sumAssay(tmp, na.rm = na.rm, ...)
 
   # remove metabolites with too many missing isotopologues
   nafraction <- .sumAssay(data.frame(tmp[,1, drop = FALSE], is.na(tmp[,-1])), FUN = mean)
