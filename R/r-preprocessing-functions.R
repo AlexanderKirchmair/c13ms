@@ -150,7 +150,6 @@ clean <- function(TE, assay = "norm", qc_LOQ = "loq", new_assay = "clean", thres
     stopifnot(all.equal(dim(data), dim(LOQ)))
   }
 
-
   exclude <- intersect(exclude, rownames(data))
   if (length(exclude) == 0) exclude <- NULL
 
@@ -201,7 +200,6 @@ clean <- function(TE, assay = "norm", qc_LOQ = "loq", new_assay = "clean", thres
 
   assay(TE, new_assay, type = type) <- data_clean
   TE
-
 }
 
 

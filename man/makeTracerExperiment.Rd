@@ -35,3 +35,7 @@ makeTracerExperiment(
 \description{
 Make new TracerExperiment
 }
+\examples{
+TE <- exampleTracerExperiment()
+makeTracerExperiment(data = data.frame(isoData(TE), assay(TE, "raw")), colData = colData(TE), metData = metData(TE))
+}

@@ -18,6 +18,8 @@
 #' @export
 #'
 #' @examples
+#' TE <- exampleTracerExperiment()
+#' makeTracerExperiment(data = data.frame(isoData(TE), assay(TE, "raw")), colData = colData(TE), metData = metData(TE))
 makeTracerExperiment <- function(data, metabolite = metabolite, label = label, QC = NULL, metData = NULL, colData = NULL, meta = NULL, assay = "raw"){
 
 
@@ -411,7 +413,16 @@ subsetMet <- function(data, met = NULL, isodata = NULL){
 
 
 
-
+#' Summarize data
+#'
+#' @param data
+#' @param var
+#' @param FUN
+#' @param ...
+#'
+#' @return
+#'
+#' @examples
 .sumAssay <- function(data, var = metabolite, FUN = sum, ...){
 
   var <- rlang::enquo(var)
@@ -464,13 +475,28 @@ subsetMet <- function(data, met = NULL, isodata = NULL){
 }
 
 
-
+#' Print in color
+#'
+#' @param str
+#' @param col
+#' @param add
+#'
+#' @return
+#'
+#' @examples
 .colorcat <- function(str = "text", col = rgb(1,1,1), add = "\n"){
   cat( crayon::make_style(col)(paste0(str, add)) )
 }
 
 
-
+#' Unique values without NA
+#'
+#' @param x
+#' @param ...
+#'
+#' @return
+#'
+#' @examples
 .unique.na <- function(x, ...){
   x <- unique(x,  ...)
   x[!is.na(x)]
