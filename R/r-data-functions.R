@@ -278,10 +278,12 @@ sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ 
   nafraction <- .sumAssay(data.frame(tmp[,1, drop = FALSE], is.na(tmp[,-1])), FUN = mean)
   sumdata[nafraction > max_nafrac_per_met] <- NA
 
-  # set metabolite order
+
+  # set metabolite order - do not use indexing!!!
   mets_uni <- unique(mets[,1])
   if (all(mets_uni %in% rownames(TE@metData))) mets_uni <- rownames(TE@metData)
-  sumdata <- sumdata[mets_uni,]
+  ix <- match(mets_uni, rownames(sumdata))
+  sumdata <- sumdata[ix,]
   rownames(sumdata) <- mets_uni
 
   if (is.null(new_assay)) return(sumdata)
