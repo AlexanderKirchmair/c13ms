@@ -265,8 +265,10 @@ sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ 
   assaydata_clean <- Reduce(cbind, data_grouped)
   assaydata_clean <- assaydata_clean[rownames(assaydata), colnames(assaydata)]
   if (!is.null(min_groupfrac_per_iso)){
-    group_na <- sapply(data_grouped, function(tmp){ rowSums(!is.na(tmp)) })
-    assaydata_clean[!rowMeans(group_na > min_rep_per_group) >= min_groupfrac_per_iso,] <- NA
+    # group_not_na... number of non-NA samples per group
+    group_not_na <- sapply(data_grouped, function(tmp){ rowSums(!is.na(tmp)) })
+    # remove metabolites completely, if too many groups are NA
+    assaydata_clean[!rowMeans(group_not_na >= min_rep_per_group) >= min_groupfrac_per_iso,] <- NA
   }
 
   # sum data
