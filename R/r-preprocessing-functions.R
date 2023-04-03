@@ -34,7 +34,6 @@ estimateLOQs <- function(TE, assay = "raw", qc = "blanks", qc_LOD = "lod", qc_LO
   sdLOD[exclude] <- 0
 
   TE@isoData[[qc_LOD]] <- LOD[rownames(TE@isoData)]
-  # TE@isoData[[qc_sdLOD]] <- sdLOD[rownames(TE@isoData)]
 
   LODdf <- data.frame(matrix(rep(LOD, nrow(TE@colData)), ncol = nrow(TE@colData)))
   dimnames(LODdf) <- list(rownames(TE@isoData), rownames(TE@colData))
@@ -44,10 +43,6 @@ estimateLOQs <- function(TE, assay = "raw", qc = "blanks", qc_LOD = "lod", qc_LO
   LOQ <- (data - data.matrix(LODdf))/sdLOD
   LOQ[.naf(sdLOD == 0),] <- Inf
   TE@qcAssays[[qc_LOQ]] <- LOQ
-
-  # sdLODdf <- data.frame(matrix(rep(sdLOD, nrow(TE@colData)), ncol = nrow(TE@colData)))
-  # dimnames(sdLODdf) <- list(rownames(TE@isoData), rownames(TE@colData))
-  # TE@qcAssays[[qc_sdLOD]] <- sdLODdf
 
   TE
 }
@@ -84,7 +79,7 @@ preprocessLOQs <- function(TE, assay = "raw", new_assay = "lod", thres_LOQ = 1.5
   above_LOQ <- NULL
   if (!is.null(qc_LOQ)){
     stopifnot(all.equal(dimnames(LOQ), dimnames(data)))
-    if (!is.null(exclude)) LOQ[rownames(LOQ) %in% exclude,] <- 0
+    if (!is.null(exclude)) LOQ[rownames(LOQ) %in% exclude,] <- Inf
     above_LOQ_thres <- .naf(thres_LOQ <= LOQ)
     data_preprocessed[!above_LOQ_thres] <- below_LOQ
   }
