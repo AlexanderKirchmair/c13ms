@@ -85,7 +85,7 @@ preprocessLOQs <- function(TE, assay = "raw", new_assay = "lod", thres_LOQ = 1.5
   if (!is.null(qc_LOQ)){
     stopifnot(all.equal(dimnames(LOQ), dimnames(data)))
     if (!is.null(exclude)) LOQ[rownames(LOQ) %in% exclude,] <- 0
-    above_LOQ_thres <- .naf(thres_LOQ > LOQ)
+    above_LOQ_thres <- .naf(thres_LOQ <= LOQ)
     data_preprocessed[!above_LOQ_thres] <- below_LOQ
   }
 
