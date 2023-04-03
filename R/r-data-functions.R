@@ -409,12 +409,12 @@ isoEnrichment <- function(TE, assay = "mid", new_assay = "frac", na.rm = TRUE, n
 subsetMet <- function(data, met = NULL, isodata = NULL){
 
   if (any(met %in% rownames(data))){
-    tmp <- tmp[met,,drop = FALSE]
+    data <- data[met,,drop = FALSE]
   } else {
-    tmp <- data[rownames(isodata),,drop = FALSE]
-    tmp <- tmp[isodata$metabolite %in% met,,drop = FALSE]
+    data <- data[rownames(isodata),,drop = FALSE]
+    data <- data[isodata$metabolite %in% met,,drop = FALSE]
   }
-  tmp
+  data
 }
 
 

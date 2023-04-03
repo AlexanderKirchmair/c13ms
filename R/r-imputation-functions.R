@@ -52,6 +52,7 @@ imputeTE <- function(TE, assay = "lod", original = "raw", nan = NA, na = c("subL
   } else if (is.character(na)){
     # na should be the name of the function
     # any NaNs still present are treated as NAs
+    message(paste0("Calling: .imp_", tolower(na)))
     imp <- do.call(what = paste0(".imp_", tolower(na)), args = list(data = data, LOD = LOD, LOQ = LOQ, raw = raw, ...))
     ix <- is.na(data.matrix(data))
     data[ix] <- imp[ix]
@@ -88,6 +89,7 @@ imputeTE <- function(TE, assay = "lod", original = "raw", nan = NA, na = c("subL
 
 # Weighted subtraction of LODs from raw
 .imp_linsublods <- function(LOD, LOQ, raw, ...){
+  LOQ[LOQ < 1] <- 1 # subtract not more than LOD
   imp <- raw - LOD / LOQ
   imp[.naf(imp < 0)] <- 0
   imp
