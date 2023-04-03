@@ -301,7 +301,7 @@ sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ 
     TE@qcAssays[[paste0("met_loq_", new_assay)]] <- sumloq
   }
 
-  TE@isoAssays[["clean_mid"]] <- assaydata_clean
+  TE@isoAssays[["clean_mid"]] <- assaydata_clean # rename...
   TE@metAssays[[new_assay]] <- sumdata
   TE
 }
