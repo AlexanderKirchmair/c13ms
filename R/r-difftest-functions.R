@@ -491,7 +491,7 @@ testLIMMA <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
 
 
 
-testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FALSE, p.adj.method = "fdr", FUN = NULL, ...){
+testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FALSE, p.adj.method = "fdr", min_pval = .Machine$double.eps, FUN = NULL, ...){
 
   # variables must be factor
 
@@ -589,14 +589,10 @@ testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FA
       dfres <- data.frame("lfc" = conc.res$test$coefficients,
                           "pval" = conc.res$test$pvalues)
 
-      # print(lmecontrasts)
       cmat <- lapply(lmecontrasts[[1]], function(x) trimws(strsplit(gsub("=.*", "", x), split = " - ")[[1]]) )
-      # lapply(lmecontrasts, function(x) sapply(x, function(xx) trimws(strsplit(gsub("=.*", "", xx), split = " - ")[[1]]) ))
+
 
       cmat <- sapply(seq_along(cmat), function(i) paste0(names(cmat)[i], cmat[[i]]) )
-
-      # lfcs <- log2(lmefit$coefficients$fixed[cmat[1,]] / lmefit$coefficients$fixed[cmat[2,]])
-      # dfres$lfc <- as.numeric(lfcs)
 
       means <- dplyr::group_by(.data = data.lme, classes) %>% dplyr::summarise(mean = mean(conc)) %>% dplyr::pull(mean, name = classes)
       cmat <- sapply(lmecontrasts[[1]], function(x) trimws(strsplit(gsub("=.*", "", x), split = " - ")[[1]]) )
@@ -627,6 +623,7 @@ testLMM <- function(data, design, formula, contrasts, random = NULL, logged = FA
 
   results <- lapply(results, function(tmp){
     tmp <- as.data.frame(tmp)
+    tmp$pval[.naf(tmp$pval < min_pval)] <- min_pval
     tmp$padj <- p.adjust(tmp$pval, method = p.adj.method)
     tmp
   })
@@ -723,101 +720,102 @@ testDREAM <- function(data, design, formula, contrasts, logged = FALSE, p.adj.me
 
 
 
+#
+# testBETAREG <- function(data, design, formula, contrasts, p.adj.method = "fdr", logged = FALSE, min_pval = .Machine$double.eps, ...){
+#
+#   stopifnot(requireNamespace("betareg", quietly = TRUE))
+#   stopifnot(requireNamespace("multcomp", quietly = TRUE))
+#
+#   ### Input arguments ----
+#
+#   data <- as.data.frame(t(data))
+#   data[is.na(data)] <- NA
+#   stopifnot(min(data, na.rm = TRUE) >= 0 & max(data, na.rm = TRUE) <= 1)
+#
+#   formula <- update(formula, conc ~  0 + .)
+#
+#
+#   ### Contrasts and formula ----
+#
+#   subsets <- getSubsets(contrasts)
+#
+#   ### Model fitting and testing ----
+#
+#   results <- lapply(subsets, function(tmpsubset){
+#     subset_data <- getDataSubset(data, design, contrast = tmpsubset)
+#     subset_design <- design[rownames(subset_data), intersect(all.vars(formula), colnames(design)),drop = FALSE]
+#
+#     nares <- setNames(rep(NA, length(tmpsubset)), names(tmpsubset))
+#     nares <- data.frame(pval = nares, diff = nares)
+#
+#     res <- lapply(subset_data, function(conc){
+#
+#       if (length(.unique.na(conc)) <= 1) return(nares)
+#       if (any(.naf(conc == 0)) | any(.naf(conc == 1))){
+#         conc <- (conc * (length(conc)-1) + 0.5) / length(conc)
+#       }
+#
+#       subset_design$conc <- conc
+#       tmp <- subset(subset_design, !is.na(conc))
+#
+#       # car::linearHypothesis(fit, paste0(groups[1], " = ", groups[2]))
+#
+#       contr <- lapply(tmpsubset, function(tmpcontr){
+#         ix <- sapply(tmpcontr, length) == 2
+#         check_df <- tmp[tmp[[names(tmpcontr)[ix]]] %in% tmpcontr[[which(ix)]],, drop = FALSE]
+#         if (length(unique(check_df[[which(ix)]])) == 2 & any(table(check_df[[which(ix)]]) > 1)){
+#           paste0(names(tmpcontr)[ix], tmpcontr[[which(ix)]])
+#         } else {
+#           NULL
+#         }
+#       })
+#
+#       if (any(!sapply(contr, is.null))){
+#         tryCatch({fit <- betareg::betareg(formula, data = subset_design)},
+#                  error = function(x){return(nares)})
+#       } else {
+#         return(nares)
+#       }
+#
+#       contr <- contr[sapply(contr, function(tmp) all(tmp %in% names(fit$coefficients$mean)))]
+#
+#       contr.glht <- sapply(contr, function(g){paste0(g[1], " - ", g[2], " = 0")})
+#       contr.glht <- contr.glht[!sapply(contr, is.null)]
+#
+#       res <- summary(multcomp::glht(fit, linfct = contr.glht), test = multcomp::adjusted("none"))
+#       pval <- setNames(as.numeric(res$test$pvalues), names(contr.glht))[names(tmpsubset)]
+#
+#       b <- fit$coefficients$mean[unique(unlist(contr))]
+#       est <- exp(b)/(1+exp(b))
+#       diff <- as.numeric(sapply(contr, function(tmp) setNames(est[tmp[1]] - est[tmp[2]], NULL) ))
+#       #lfc <- log2(fc)
+#
+#
+#       data.frame(pval = setNames(pval, names(tmpsubset)), diff)
+#     })
+#
+#     contr.res <- rownames(res[[1]])
+#     res <- lapply(setNames(contr.res, contr.res), function(i){
+#       data.frame(t(sapply(res, function(tmp){ setNames(as.numeric(tmp[i,]), colnames(tmp)) })))
+#     })
+#
+#     res
+#   })
+#
+#
+#   ### Results ----
+#
+#   results <- Reduce('c', results)
+#   results
+#
+#
+# }
+#
+#
 
-testBETAREG <- function(data, design, formula, contrasts, p.adj.method = "fdr", logged = FALSE, ...){
-
-  stopifnot(requireNamespace("betareg", quietly = TRUE))
-  stopifnot(requireNamespace("multcomp", quietly = TRUE))
-
-  ### Input arguments ----
-
-  data <- as.data.frame(t(data))
-  data[is.na(data)] <- NA
-  stopifnot(min(data, na.rm = TRUE) >= 0 & max(data, na.rm = TRUE) <= 1)
-
-  formula <- update(formula, conc ~  0 + .)
 
 
-  ### Contrasts and formula ----
-
-  subsets <- getSubsets(contrasts)
-
-  ### Model fitting and testing ----
-
-  results <- lapply(subsets, function(tmpsubset){
-    subset_data <- getDataSubset(data, design, contrast = tmpsubset)
-    subset_design <- design[rownames(subset_data), intersect(all.vars(formula), colnames(design)),drop = FALSE]
-
-    nares <- setNames(rep(NA, length(tmpsubset)), names(tmpsubset))
-    nares <- data.frame(pval = nares, diff = nares)
-
-    res <- lapply(subset_data, function(conc){
-
-      if (length(.unique.na(conc)) <= 1) return(nares)
-      if (any(.naf(conc == 0)) | any(.naf(conc == 1))){
-        conc <- (conc * (length(conc)-1) + 0.5) / length(conc)
-      }
-
-      subset_design$conc <- conc
-      tmp <- subset(subset_design, !is.na(conc))
-
-      # car::linearHypothesis(fit, paste0(groups[1], " = ", groups[2]))
-
-      contr <- lapply(tmpsubset, function(tmpcontr){
-        ix <- sapply(tmpcontr, length) == 2
-        check_df <- tmp[tmp[[names(tmpcontr)[ix]]] %in% tmpcontr[[which(ix)]],, drop = FALSE]
-        if (length(unique(check_df[[which(ix)]])) == 2 & any(table(check_df[[which(ix)]]) > 1)){
-          paste0(names(tmpcontr)[ix], tmpcontr[[which(ix)]])
-        } else {
-          NULL
-        }
-      })
-
-      if (any(!sapply(contr, is.null))){
-        tryCatch({fit <- betareg::betareg(formula, data = subset_design)},
-                 error = function(x){return(nares)})
-      } else {
-        return(nares)
-      }
-
-      contr <- contr[sapply(contr, function(tmp) all(tmp %in% names(fit$coefficients$mean)))]
-
-      contr.glht <- sapply(contr, function(g){paste0(g[1], " - ", g[2], " = 0")})
-      contr.glht <- contr.glht[!sapply(contr, is.null)]
-
-      res <- summary(multcomp::glht(fit, linfct = contr.glht), test = multcomp::adjusted("none"))
-      pval <- setNames(as.numeric(res$test$pvalues), names(contr.glht))[names(tmpsubset)]
-
-      b <- fit$coefficients$mean[unique(unlist(contr))]
-      est <- exp(b)/(1+exp(b))
-      diff <- as.numeric(sapply(contr, function(tmp) setNames(est[tmp[1]] - est[tmp[2]], NULL) ))
-      #lfc <- log2(fc)
-
-      data.frame(pval = setNames(pval, names(tmpsubset)), diff)
-    })
-
-    contr.res <- rownames(res[[1]])
-    res <- lapply(setNames(contr.res, contr.res), function(i){
-      data.frame(t(sapply(res, function(tmp){ setNames(as.numeric(tmp[i,]), colnames(tmp)) })))
-    })
-
-    res
-  })
-
-
-  ### Results ----
-
-  results <- Reduce('c', results)
-  results
-
-
-}
-
-
-
-
-
-testBETA <- function(data, design, formula, contrasts, zotrans = NULL, p.adj.method = "fdr", verbose = FALSE, logged = FALSE, ...){
+testBETA <- function(data, design, formula, contrasts, zotrans = NULL, p.adj.method = "fdr", verbose = FALSE, logged = FALSE, min_pval = .Machine$double.eps, ...){
 
   stopifnot(requireNamespace("glmmTMB", quietly = TRUE))
   stopifnot(requireNamespace("multcomp", quietly = TRUE))
@@ -931,6 +929,7 @@ testBETA <- function(data, design, formula, contrasts, zotrans = NULL, p.adj.met
     contr.res <- rownames(res[[1]])
     res <- lapply(setNames(contr.res, contr.res), function(i){
       df <- data.frame(t(sapply(res, function(tmp){ setNames(as.numeric(tmp[i,]), colnames(tmp)) })))
+      df$pval[.naf(df$pval < min_pval)] <- min_pval
       df$padj <- p.adjust(df$pval, method = p.adj.method)
       df
     })
