@@ -155,7 +155,7 @@ ggrle <- function(data, topN = 10, title = NULL, cluster = TRUE){
 #'
 #' @examples
 #' exampleTracerExperiment(nmets = 2) |> MID("raw") |> isoplot(title = "Molecule")
-isoplot <- function(TE, assay = "mid", mets = NULL, summarise_by = NULL, dir = NULL, filename = NULL, title = NULL, title_size = NULL, order_by = NULL, ...){
+isoplot <- function(TE, assay = "mid", mets = NULL, summarise_by = NULL, dir = NULL, filename = NULL, title = NULL, title_size = NULL, height = 10, order_by = NULL, dev = "png", ...){
 
   isodata <- isoData(TE)
   if (is.null(mets)) mets <- rownames(metData(TE))
@@ -220,14 +220,24 @@ isoplot <- function(TE, assay = "mid", mets = NULL, summarise_by = NULL, dir = N
 
     #wtmp/nc
     #htmp/nr
-    d <- DeLuciatoR::get_dims(gg[[m]], maxheight = 10)
+    d <- DeLuciatoR::get_dims(gg[[m]], maxheight = height)
     w <- d$width / d$height
 
-    ggplot2::ggsave(plot = gg[[m]],
-           filename = file.path(dir, paste0(m, ".png")),
-           device = "png", type = "cairo", dpi = 300,
-           width = 10 * w,
-           height = 10)
+    if (dev == "png"){
+      ggplot2::ggsave(plot = gg[[m]],
+                      filename = file.path(dir, paste0(m, ".", dev)),
+                      device = dev, type = "cairo", dpi = 300,
+                      width = height * w,
+                      height = height)
+    } else {
+      ggplot2::ggsave(plot = gg[[m]],
+                      filename = file.path(dir, paste0(m, ".", dev)),
+                      device = dev, dpi = 300,
+                      width = height * w,
+                      height = height)
+    }
+
+
   }))
 
   invisible(NULL)
