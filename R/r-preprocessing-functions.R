@@ -127,65 +127,85 @@ preprocessLOQs <- function(TE, assay = "raw", new_assay = "lod", thres_LOQ = 1.5
 #' @param exclude internal standard
 #' @param remove_imp optionally, remove all imputed values
 #' @param ...
+#' @param max_nafrac_per_met
+#' @param type
+#' @param soft
 #'
 #' @export
 #'
 #' @examples
 #' exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> clean(assay = "raw")
 #' exampleTracerExperiment(add_qc = TRUE) |> estimateLOQs() |> sumMets(assay = "raw", sum_qc = TRUE) |> clean(assay = "raw", type = "met", qc_LOQ = "met_loq_raw")
-clean <- function(TE, assay = "norm", qc_LOQ = "loq", new_assay = "clean", thres_LOQ = 1.5, max_nafrac_per_group = 1/3, min_rep_per_group = 2, split_by = ~ 1, type = "iso", exclude = "internal.standard", soft = NULL, remove_imp = FALSE, ...){
+clean <- function (TE, assay = "norm", qc_LOQ = "loq", new_assay = "clean", thres_LOQ = 1.5, max_nafrac_per_met = 0.9, max_nafrac_per_group = 1/3, min_rep_per_group = 2,
+                   split_by = ~ 1, type = "iso", exclude = "internal.standard", soft = NULL, remove_imp = FALSE, ...){
 
-  if (is.null(soft)){ soft <- !is.null(thres_LOQ) }
+  if (is.null(soft)) {
+    soft <- !is.null(thres_LOQ)
+  }
 
+  # Data
   if (is.null(assay)) assay <- .getAssays(TE, assay = assay, last = TRUE, names_only = TRUE, type = type)
   data <- assay(TE, assay, type = type)
+  if (is.null(data)) stop("Error: Data not found!")
   data.orig <- data
-
   data[is.na(data)] <- NA
   design <- TE@colData
-  if (is.null(data)) stop("Error: Data not found!")
 
-  if (!is.null(qc_LOQ)){
+
+  if (!is.null(qc_LOQ)) {
     LOQ <- .getAssays(TE, assay = qc_LOQ, type = "qc")
     stopifnot(all.equal(dim(data), dim(LOQ)))
   }
-
   exclude <- intersect(exclude, rownames(data))
   if (length(exclude) == 0) exclude <- NULL
 
-  # Optionally set imputed values to NA
-  if (remove_imp == TRUE & !is.null(TE@qcAssays$na)){
+  # Set values below LOQ to NA
+  # NA ... only temporary
+  if (!is.null(qc_LOQ)) {
+    data[LOQ < thres_LOQ] <- NA # NA is removed later when soft==TRUE, only NaN are kept in any case
+  }
+
+  # Optionally set all imputed values to NA
+  if (remove_imp == TRUE & !is.null(TE@qcAssays$na)) {
     .colorcat("Setting imputed values to NA...")
     imp <- as.matrix(TE@qcAssays$na)
     data[imp] <- NaN
   }
 
-  # Set values below LOQ to NA
-  # NA ... only temporary
-  if (!is.null(qc_LOQ)){
-    data[LOQ < thres_LOQ] <- NA
+
+  ### Thresholds per metabolite ----
+  if (!is.null(max_nafrac_per_met) & type != "met"){
+    na_mets <- data.frame(isoData(TE)[,"metabolite", drop = FALSE], is.na(data)) |> .sumAssay(FUN = mean)
+    na_mets <- na_mets[isoData(TE)[rownames(data),"metabolite"],]
+    data[na_mets > max_nafrac_per_met] <- NaN
   }
 
+
+
+  ### Thresholds per group ----
+
   # Split into groups
-  if (length(labels(terms(split_by))) > 0){
-    groups <- apply(design[,labels(terms(split_by)),drop = FALSE], 1, paste0,  collapse = "_")
+  if (length(labels(terms(split_by))) > 0) {
+    groups <- apply(design[, labels(terms(split_by)), drop = FALSE], 1, paste0, collapse = "_")
     stopifnot(all(names(groups) == colnames(data)))
-    data_grouped <- lapply(setNames(unique(groups), unique(groups)), function(g) data[,groups == g,drop = FALSE])
+    data_grouped <- lapply(setNames(unique(groups), unique(groups)), function(g) data[, groups == g, drop = FALSE])
   } else {
     data_grouped <- list(data)
   }
 
-  # Missing values per group
   # NaN ... newly removed
-  if (!is.null(max_nafrac_per_group)){
-    data_grouped <- lapply(data_grouped, function(tmp){
-      tmp[rowMeans(is.na(tmp)) > max_nafrac_per_group & !rownames(tmp) %in% exclude,] <- NaN
+  if (!is.null(max_nafrac_per_group)) {
+    data_grouped <- lapply(data_grouped, function(tmp) {
+      tmp[rowMeans(is.na(tmp)) > max_nafrac_per_group &
+            !rownames(tmp) %in% exclude, ] <- NaN
       tmp
     })
   }
-  if (!is.null(min_rep_per_group)){
-    data_grouped <- lapply(data_grouped, function(tmp){
-      tmp[rowSums(!is.na(tmp)) < min_rep_per_group & !rownames(tmp) %in% exclude,] <- NaN
+
+  if (!is.null(min_rep_per_group)) {
+    data_grouped <- lapply(data_grouped, function(tmp) {
+      tmp[rowSums(!is.na(tmp)) < min_rep_per_group & !rownames(tmp) %in%
+            exclude, ] <- NaN
       tmp
     })
   }
@@ -195,21 +215,23 @@ clean <- function(TE, assay = "norm", qc_LOQ = "loq", new_assay = "clean", thres
   data_clean <- Reduce(cbind, data_grouped)
   data_clean <- data_clean[rownames(data), colnames(data)]
 
-  if (soft == TRUE){
+  if (soft == TRUE) {
     set_na <- is.nan(data.matrix(data_clean))
     data.orig[set_na] <- NA
     data_clean <- data.orig
-  } else {
+  }
+  else {
     data_clean[is.na(data_clean)] <- NA
   }
 
   data_clean[is.nan(data.matrix(data.orig))] <- NaN
 
   if (is.null(new_assay)) return(data_clean)
-
   assay(TE, new_assay, type = type) <- data_clean
   TE
 }
+
+
 
 
 

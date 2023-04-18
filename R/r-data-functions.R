@@ -214,7 +214,7 @@ metnames <- function(x, ...){
 #' @param min_groupfrac_per_iso minimum required number of non-NA groups per isotopologue
 #' @param split_by factor(s) from colData to define groups
 #' @param exclude
-#' @param na_iso.rm
+#' @param na_iso.rm remove isotopologues with NA values only
 #' @param na.rm
 #' @param new_assay
 #' @param qc_LOQ
@@ -247,6 +247,7 @@ sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ 
                      new_assay = NULL,
                      qc_LOQ = qc_LOQ,
                      thres_LOQ = thres_LOQ,
+                     max_nafrac_per_met = max_nafrac_per_met,
                      max_nafrac_per_group = max_nafrac_per_group,
                      min_rep_per_group = min_rep_per_group,
                      split_by = split_by,
@@ -305,7 +306,7 @@ sumMets <- function(TE, assay = "norm", new_assay = "", thres_LOQ = 1.5, qc_LOQ 
     TE@qcAssays[[paste0("met_loq_", new_assay)]] <- sumloq
   }
 
-  TE@isoAssays[["clean_mid"]] <- assaydata_clean # rename...
+  TE@isoAssays[["clean_sum"]] <- assaydata_clean
   TE@metAssays[[new_assay]] <- sumdata
   TE
 }
