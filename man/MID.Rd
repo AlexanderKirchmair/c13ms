@@ -4,11 +4,14 @@
 \alias{MID}
 \title{Mass isotopomer distribution (MID)}
 \usage{
-MID(TE, assay = "norm", metAssay = NULL, new_assay = "mid", ...)
+MID(TE, assay = "norm", new_assay = "mid", ...)
 }
 \arguments{
 \item{...}{}
 }
 \description{
 Mass isotopomer distribution (MID)
+}
+\examples{
+exampleTracerExperiment() |> MID(assay = "raw") |> sumMets(assay = "mid", new_assay = NULL)
 }

@@ -6,11 +6,13 @@
 \usage{
 isoplot(
   TE,
+  assay = "mid",
   mets = NULL,
   summarise_by = NULL,
   dir = NULL,
   filename = NULL,
   title = NULL,
+  title_size = NULL,
   order_by = NULL,
   ...
 )
@@ -20,4 +22,7 @@ isoplot(
 }
 \description{
 Isotopologue plotting
+}
+\examples{
+exampleTracerExperiment(nmets = 2) |> MID("raw") |> isoplot(title = "Molecule")
 }

@@ -149,3 +149,56 @@ install()
 
 
 
+
+
+
+
+
+
+
+
+Also LMM?
+
+```{r}
+
+
+
+family <- glmmTMB::beta_family(link = "logit")
+df <- data.frame(conc = c(0.1,0.29,0.11,0.7,0.8,0.75), group = c("a","a","a","b","b","b"))
+
+fit <- glmmTMB::glmmTMB(conc ~ 0 + group, df, family = family)
+sres <- summary(fit)
+res <- summary(multcomp::glht(fit, linfct = "groupa - groupb = 0"), test = multcomp::adjusted("none"))
+res$test$pvalues # min is around 2.220446e-16
+
+fit <- glmmTMB::glmmTMB(conc ~ group, df, family = family)
+sres <- summary(fit)
+sres$coefficients$cond # here pvalues can be much lower
+
+?multcomp:::summary.glht
+res1 <- summary(multcomp::glht(fit, linfct = c("groupa - groupb = 0","groupa - groupb = 0")), test = multcomp::adjusted("none"))$test$pvalues
+res <- summary(multcomp::glht(fit, linfct = c("groupa - groupb = 0","groupa - groupb = 0")), test = multcomp::Chisqtest())
+res$test$pvalue
+
+res1 - res$test$pvalue
+sres$coefficients$cond[2,4] - res$test$pvalue
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

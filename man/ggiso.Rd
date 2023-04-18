@@ -4,7 +4,7 @@
 \alias{ggiso}
 \title{Isotopologue plotting}
 \usage{
-ggiso(mid, isodata, label = TRUE, cumulative = FALSE, ...)
+ggiso(mid, isodata, label = TRUE, cumulative = FALSE, title_size = NULL, ...)
 }
 \arguments{
 \item{...}{}

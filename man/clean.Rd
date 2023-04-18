@@ -15,6 +15,7 @@ clean(
   split_by = ~1,
   type = "iso",
   exclude = "internal.standard",
+  soft = NULL,
   remove_imp = FALSE,
   ...
 )

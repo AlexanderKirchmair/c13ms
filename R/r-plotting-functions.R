@@ -137,72 +137,16 @@ ggrle <- function(data, topN = 10, title = NULL, cluster = TRUE){
 
 
 
-
-
-###
-
-
-
-
-#
-# todev <- function(call, dev, ...){
-#
-#   call <- rlang::enquo(call)
-#   dev <- rlang::enquo(dev)
-#
-#   do.call(call, ...)
-#   eval(call)
-#   dev.off()
-#
-# }
-
-
-
-
-#' PDF figures
-#'
-#' @param gg
-#' @param file
-#' @param width
-#' @param height
-#' @param dpi
-#' @param units
-#' @param ...
-#'
-#' @return
-#' @export
-#'
-#' @examples
-ggpdfs <- function(gg, file, width = 3000, height = 2500, dpi = 300, units = "px", ...){
-
-  if (length(file) > 1) file <- do.call(file.path, as.list(file))
-  if (nat(baseext(file) != "pdf")) file <- paste0(file, ".pdf")
-
-  if (units == "px"){
-    width <- width / dpi
-    height <- height / dpi
-  }
-
-
-  pdf(file = file, width = width, height = height, onefile = TRUE, ...)
-  print(gg)
-  dev.off()
-
-  invisible(gg)
-}
-
-
-
-
-
 #' Isotopologue plotting
 #'
 #' @param TE
+#' @param assay
 #' @param mets
 #' @param summarise_by
 #' @param dir
 #' @param filename
 #' @param title
+#' @param title_size
 #' @param order_by
 #' @param ...
 #'
@@ -210,11 +154,12 @@ ggpdfs <- function(gg, file, width = 3000, height = 2500, dpi = 300, units = "px
 #' @export
 #'
 #' @examples
-isoplot <- function(TE, mets = NULL, summarise_by = NULL, dir = NULL, filename = NULL, title = NULL, order_by = NULL, ...){
+#' exampleTracerExperiment(nmets = 2) |> MID("raw") |> isoplot(title = "Molecule")
+isoplot <- function(TE, assay = "mid", mets = NULL, summarise_by = NULL, dir = NULL, filename = NULL, title = NULL, title_size = NULL, order_by = NULL, ...){
 
   isodata <- isoData(TE)
   if (is.null(mets)) mets <- rownames(metData(TE))
-  mids <- lapply(setNames(mets, mets), function(m) assay(TE, "mid", met = m) )
+  mids <- lapply(setNames(mets, mets), function(m) assay(TE, assay, met = m) )
 
   by <- rlang::enquo(summarise_by)
   if (!rlang::quo_is_null(by)){
@@ -236,7 +181,7 @@ isoplot <- function(TE, mets = NULL, summarise_by = NULL, dir = NULL, filename =
   }
 
 
-  gg <- lapply(mids, function(mid){ ggiso(mid, isodata, ...) })
+  gg <- lapply(mids, function(mid){ ggiso(mid = mid, isodata = isodata, title_size = title_size, ...) })
 
   if (!is.null(title)){
     gg <- lapply(setNames(names(gg), names(gg)), function(m){
@@ -248,6 +193,7 @@ isoplot <- function(TE, mets = NULL, summarise_by = NULL, dir = NULL, filename =
 
     })
   }
+
 
   if (is.null(dir) & length(gg) == 1) return(gg[[1]])
   if (is.null(dir) & length(gg) > 1) return(gg)
@@ -306,7 +252,7 @@ isoplot <- function(TE, mets = NULL, summarise_by = NULL, dir = NULL, filename =
 #' @export
 #'
 #' @examples
-ggiso <- function(mid, isodata, label = TRUE, cumulative = FALSE, ...){
+ggiso <- function(mid, isodata, label = TRUE, cumulative = FALSE, title_size = NULL, ...){
 
   if (all(is.na(mid))) return(NULL)
 
@@ -341,7 +287,7 @@ ggiso <- function(mid, isodata, label = TRUE, cumulative = FALSE, ...){
   }
 
 
-  gg <- ggcircles(data = droplevels(df), mapping = mapping, ...) + ggplot2::labs(fill = "label %")
+  gg <- ggcircles(data = droplevels(df), mapping = mapping, title_size = title_size, ...) + ggplot2::labs(fill = "label %")
 
   gg
 }
@@ -351,7 +297,7 @@ ggiso <- function(mid, isodata, label = TRUE, cumulative = FALSE, ...){
 
 
 ggcircles <- function(data, mapping = aes(x = x, y = y, fill = value), sym = TRUE,
-                      r = 0.5, fontsize = 10, labelsize = 5, labelface = 1, labelcolor = "black",
+                      r = 0.5, fontsize = 10, title_size = 10, labelsize = 10, labelface = 1, labelcolor = "black",
                       colorscale = c("white", "mediumblue"), nacolor = "gray90", legend = TRUE, ...){
 
   ### Input ----
@@ -396,7 +342,7 @@ ggcircles <- function(data, mapping = aes(x = x, y = y, fill = value), sym = TRU
   ### GGPLOT ----
 
   gg <- ggplot2::ggplot(data = data, mapping = aes1) +
-    theme_circles(base_size = fontsize) +
+    theme_circles(base_size = fontsize, title_size = title_size) +
     ggforce::geom_circle(aes2, inherit.aes = FALSE, ...)
 
   gg %<>% + ggplot2::scale_x_continuous(breaks = xbreaks,
@@ -428,7 +374,7 @@ ggcircles <- function(data, mapping = aes(x = x, y = y, fill = value), sym = TRU
   gg <- gg + ggplot2::xlab("") + ggplot2::ylab("") + ggplot2::coord_fixed(clip = "off")
 
 
-  if ("label" %in% names(mapping)) gg <- gg + ggplot2::geom_text(aes3, size = labelsize, fontface = labelface, color = labelcolor)
+  if ("label" %in% names(mapping)) gg <- gg + ggplot2::geom_text(aes3, size = labelsize/ggplot2:::.pt, fontface = labelface, color = labelcolor)
 
   gg
 }
@@ -449,7 +395,7 @@ revOrder <- function(x){
 
 
 
-theme_circles <- function(base_size = fontsize, base_family = "", base_line_size = base_size/80, base_rect_size = base_size/80){
+theme_circles <- function(base_size = 10, title_size = 10, base_family = "", base_line_size = base_size/80, base_rect_size = base_size/80){
 
   th1 <- ggplot2::theme_minimal(base_size = base_size,
                                 base_family = base_family,
@@ -457,7 +403,7 @@ theme_circles <- function(base_size = fontsize, base_family = "", base_line_size
 
   th2 <- ggplot2::theme(panel.spacing = grid::unit(c(0,0,0,0), units = "mm"),
                         plot.margin = grid::unit(c(0,0,0,0), "mm"),
-                        plot.title = ggplot2::element_text(size = base_size,
+                        plot.title = ggplot2::element_text(size = title_size,
                                                   color = rgb(0,0,0),
                                                   face = "bold",
                                                   angle = 0,

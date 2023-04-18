@@ -17,6 +17,8 @@ sumMets(
   split_by = ~1,
   exclude = "internal.standard",
   sum_qc = NULL,
+  qc_max = 10,
+  soft = NULL,
   na_iso.rm = TRUE,
   na.rm = TRUE,
   ...
@@ -38,6 +40,8 @@ sumMets(
 \item{min_groupfrac_per_iso}{minimum required number of non-NA groups per isotopologue}
 
 \item{split_by}{factor(s) from colData to define groups}
+
+\item{soft}{temporarily set values below thres_LOQ to NA}
 
 \item{...}{}
 }
