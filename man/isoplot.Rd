@@ -13,7 +13,9 @@ isoplot(
   filename = NULL,
   title = NULL,
   title_size = NULL,
+  height = 10,
   order_by = NULL,
+  dev = "png",
   ...
 )
 }
@@ -24,5 +26,5 @@ isoplot(
 Isotopologue plotting
 }
 \examples{
-exampleTracerExperiment(nmets = 2) |> MID("raw") |> isoplot(title = "Molecule")
+exampleTracerExperiment(nmets = 2) |> MID("raw") |> isoplot(title = "Molecule", colorscale = c("white", "darkblue"), nacolor = "gray50", linewidth = 1, col_cex = 0.5)
 }

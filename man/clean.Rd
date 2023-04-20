@@ -10,6 +10,7 @@ clean(
   qc_LOQ = "loq",
   new_assay = "clean",
   thres_LOQ = 1.5,
+  max_nafrac_per_met = 0.9,
   max_nafrac_per_group = 1/3,
   min_rep_per_group = 2,
   split_by = ~1,
@@ -39,9 +40,9 @@ clean(
 
 \item{exclude}{internal standard}
 
-\item{remove_imp}{optionally, remove all imputed values}
+\item{soft}{}
 
-\item{...}{}
+\item{remove_imp}{optionally, remove all imputed values}
 }
 \description{
 Cleaning of data

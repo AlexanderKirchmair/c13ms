@@ -154,7 +154,7 @@ ggrle <- function(data, topN = 10, title = NULL, cluster = TRUE){
 #' @export
 #'
 #' @examples
-#' exampleTracerExperiment(nmets = 2) |> MID("raw") |> isoplot(title = "Molecule")
+#' exampleTracerExperiment(nmets = 2) |> MID("raw") |> isoplot(title = "Molecule", colorscale = c("white", "darkblue"), nacolor = "gray50", linewidth = 1, col_cex = 0.5)
 isoplot <- function(TE, assay = "mid", mets = NULL, summarise_by = NULL, dir = NULL, filename = NULL, title = NULL, title_size = NULL, height = 10, order_by = NULL, dev = "png", ...){
 
   isodata <- isoData(TE)
@@ -305,10 +305,33 @@ ggiso <- function(mid, isodata, label = TRUE, cumulative = FALSE, title_size = N
 
 
 
-
+#' Plot circles with ggplot
+#'
+#' @param data
+#' @param mapping
+#' @param sym
+#' @param r
+#' @param fontsize
+#' @param title_size
+#' @param labelsize
+#' @param labelface
+#' @param labelcolor
+#' @param col_cex
+#' @param colorscale
+#' @param nacolor
+#' @param legend
+#' @param linewidth
+#' @param plot_margin
+#' @param ...
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' data.frame(x = rep(1:3,3), y = rep(c("A","B","C"), each=3), value = runif(9)*100) |> ggcircles()
 ggcircles <- function(data, mapping = aes(x = x, y = y, fill = value), sym = TRUE,
-                      r = 0.5, fontsize = 10, title_size = 10, labelsize = 10, labelface = 1, labelcolor = "black",
-                      colorscale = c("white", "mediumblue"), nacolor = "gray90", legend = TRUE, ...){
+                      r = 0.5, fontsize = 10, title_size = 10, labelsize = 10, labelface = 1, labelcolor = "black", col_cex = 1,
+                      colorscale = c("white", "mediumblue"), nacolor = "gray90", legend = TRUE, linewidth = 0.5, plot_margin = 1, ...){
 
   ### Input ----
 
@@ -352,8 +375,8 @@ ggcircles <- function(data, mapping = aes(x = x, y = y, fill = value), sym = TRU
   ### GGPLOT ----
 
   gg <- ggplot2::ggplot(data = data, mapping = aes1) +
-    theme_circles(base_size = fontsize, title_size = title_size) +
-    ggforce::geom_circle(aes2, inherit.aes = FALSE, ...)
+    theme_circles(base_size = fontsize, title_size = title_size, col_cex = col_cex, plot_margin = plot_margin) +
+    ggforce::geom_circle(aes2, size = linewidth, inherit.aes = FALSE, ...)
 
   gg %<>% + ggplot2::scale_x_continuous(breaks = xbreaks,
                                         expand = ggplot2::expansion(mult = c(0,0)),
@@ -405,14 +428,14 @@ revOrder <- function(x){
 
 
 
-theme_circles <- function(base_size = 10, title_size = 10, base_family = "", base_line_size = base_size/80, base_rect_size = base_size/80){
+theme_circles <- function(base_size = 10, title_size = 10, col_cex = 1, plot_margin = 1, base_family = "", base_line_size = base_size/80, base_rect_size = base_size/80){
 
   th1 <- ggplot2::theme_minimal(base_size = base_size,
                                 base_family = base_family,
                                 base_line_size = base_line_size)
 
   th2 <- ggplot2::theme(panel.spacing = grid::unit(c(0,0,0,0), units = "mm"),
-                        plot.margin = grid::unit(c(0,0,0,0), "mm"),
+                        plot.margin = grid::unit(c(1,1,1,1)*plot_margin, "mm"),
                         plot.title = ggplot2::element_text(size = title_size,
                                                   color = rgb(0,0,0),
                                                   face = "bold",
@@ -424,7 +447,7 @@ theme_circles <- function(base_size = 10, title_size = 10, base_family = "", bas
                         axis.text = ggplot2::element_text(margin = ggplot2::margin(c(0,0,0,0)),
                                                  color = rgb(0,0,0),
                                                  size = ggplot2::rel(1)),
-                        axis.text.x = ggplot2::element_text(size = base_size, hjust = 0.5, vjust = 1),
+                        axis.text.x = ggplot2::element_text(size = base_size * col_cex, hjust = 0.5, vjust = 1),
                         axis.text.y.left = ggplot2::element_text(size = base_size, hjust = 1, vjust = 0.5),
                         axis.text.y.right = ggplot2::element_text(colour = NA, size = base_size, hjust = 1, vjust = 0.5), # symmetric
                         panel.grid.major = ggplot2::element_blank(),

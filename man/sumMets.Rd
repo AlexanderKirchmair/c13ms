@@ -43,6 +43,8 @@ sumMets(
 
 \item{soft}{temporarily set values below thres_LOQ to NA}
 
+\item{na_iso.rm}{remove isotopologues with NA values only}
+
 \item{...}{}
 }
 \description{
