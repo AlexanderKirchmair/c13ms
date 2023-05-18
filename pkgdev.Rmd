@@ -4,16 +4,16 @@ author: "Alexander Kirchmair"
 ---
 
 ```{r setup, include=FALSE}
-
 library(devtools)
 library(usethis)
 library(testthat)
+library(SummarizedExperiment)
+library(BiocGenerics)
 
 ```
 
 
 ```{r initial setup}
-
 use_mit_license()
 use_readme_rmd()
 use_pipe()
@@ -21,16 +21,7 @@ use_pipe()
 ```
 
 
-
 ```{r}
-
-library("SummarizedExperiment")
-library("BiocGenerics")
-
-```
-
-```{r}
-
 use_package("ggplot2")
 use_package("dplyr")
 use_package("BiocGenerics")
@@ -54,10 +45,8 @@ use_package("contrast", type = "Suggests")
 
 
 
-
 R functions
 ```{r}
-
 use_r("AllClasses")
 use_r("AllGenerics")
 use_r("AllMethods")
@@ -72,13 +61,11 @@ use_r("r-plotting-functions")
 use_r("r-isocorrection-functions")
 use_r("r-testing-functions")
 
-
 ```
 
 
 Element data
 ```{r}
-
 isocomp <- getElementCompositions()
 use_data(isocomp, internal = TRUE) # include data in package
 
@@ -94,7 +81,6 @@ load_all()
 Update documentation
 Code > Insert Roxygen Skeleton
 ```{r}
-
 document()
 
 ```
@@ -102,7 +88,6 @@ document()
 
 Unit tests
 ```{r}
-
 lapply(list.files("R/", pattern = ".R"), use_test)
 
 ```
@@ -110,16 +95,13 @@ lapply(list.files("R/", pattern = ".R"), use_test)
 
 Test/check
 ```{r check}
-
 check()
 
 ```
 
 
 
-
 ```{r}
-
 usethis::use_build_ignore("pkgdev.Rmd")
 usethis::use_build_ignore("desktop.ini")
 usethis::use_git_ignore("desktop.ini")
@@ -128,9 +110,7 @@ usethis::use_git_ignore("desktop.ini")
 
 
 
-
 ```{r}
-
 devtools::build_readme()
 
 ```
@@ -138,52 +118,11 @@ devtools::build_readme()
 
 Install the package
 ```{r}
-
 install()
 
 ```
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-Also LMM?
-
-```{r}
-
-
-
-family <- glmmTMB::beta_family(link = "logit")
-df <- data.frame(conc = c(0.1,0.29,0.11,0.7,0.8,0.75), group = c("a","a","a","b","b","b"))
-
-fit <- glmmTMB::glmmTMB(conc ~ 0 + group, df, family = family)
-sres <- summary(fit)
-res <- summary(multcomp::glht(fit, linfct = "groupa - groupb = 0"), test = multcomp::adjusted("none"))
-res$test$pvalues # min is around 2.220446e-16
-
-fit <- glmmTMB::glmmTMB(conc ~ group, df, family = family)
-sres <- summary(fit)
-sres$coefficients$cond # here pvalues can be much lower
-
-?multcomp:::summary.glht
-res1 <- summary(multcomp::glht(fit, linfct = c("groupa - groupb = 0","groupa - groupb = 0")), test = multcomp::adjusted("none"))$test$pvalues
-res <- summary(multcomp::glht(fit, linfct = c("groupa - groupb = 0","groupa - groupb = 0")), test = multcomp::Chisqtest())
-res$test$pvalue
-
-res1 - res$test$pvalue
-sres$coefficients$cond[2,4] - res$test$pvalue
-
-```
 
 
 
